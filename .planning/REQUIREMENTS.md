@@ -109,11 +109,11 @@ Which phases cover which requirements. Updated by create-roadmap.
 | CHUNK-02 | Phase 3 | Complete |
 | CHUNK-03 | Phase 3 | Complete |
 | PIPE-01 | Phase 3 | Complete |
-| PIPE-02 | Phase 6 | Pending |
-| PIPE-03 | Phase 6 | Pending |
+| PIPE-02 | Phase 6 | Complete |
+| PIPE-03 | Phase 6 | Complete |
 | PIPE-04 | Phase 2 | Complete |
 | PIPE-05 | Phase 1 | Complete |
-| PIPE-06 | Phase 6 | Pending |
+| PIPE-06 | Phase 6 | Complete |
 | PIPE-07 | Phase 4 | Complete |
 | SRCH-01 | Phase 4 | Complete |
 | SRCH-02 | Phase 4 | Complete |
@@ -123,7 +123,7 @@ Which phases cover which requirements. Updated by create-roadmap.
 | AUTH-04 | Phase 5 | Complete |
 | INFRA-01 | Phase 1 | Complete |
 | INFRA-02 | Phase 1 | Complete |
-| INFRA-03 | Phase 6 | Pending |
+| INFRA-03 | Phase 6 | Complete |
 
 **Coverage:**
 - v1 requirements: 23 total
@@ -132,4 +132,4 @@ Which phases cover which requirements. Updated by create-roadmap.
 
 ---
 *Requirements defined: 2026-03-03*
-*Last updated: 2026-03-04 after Phase 5 completion*
+*Last updated: 2026-03-04 after Phase 6 completion*
