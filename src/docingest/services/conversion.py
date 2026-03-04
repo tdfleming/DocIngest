@@ -2,18 +2,40 @@ import tempfile
 from pathlib import Path
 
 import structlog
-from docling.document_converter import DocumentConverter
+from docling.datamodel.base_models import InputFormat
+from docling.datamodel.pipeline_options import PdfPipelineOptions
+from docling.document_converter import DocumentConverter, PdfFormatOption
 
 log = structlog.get_logger()
 
 _converter: DocumentConverter | None = None
+_ocr_converter: DocumentConverter | None = None
 
 
 def _get_converter() -> DocumentConverter:
+    """Standard converter with default OCR (bitmap-region only)."""
     global _converter
     if _converter is None:
         _converter = DocumentConverter()
     return _converter
+
+
+def _get_ocr_converter() -> DocumentConverter:
+    """Converter with force_full_page_ocr for image-heavy documents."""
+    global _ocr_converter
+    if _ocr_converter is None:
+        pipeline_options = PdfPipelineOptions(
+            do_ocr=True,
+            ocr_options=PdfPipelineOptions().ocr_options.model_copy(
+                update={"force_full_page_ocr": True}
+            ),
+        )
+        _ocr_converter = DocumentConverter(
+            format_options={
+                InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_options),
+            }
+        )
+    return _ocr_converter
 
 
 def convert_to_markdown(raw_bytes: bytes, content_type: str, source_ref: str) -> str:
@@ -21,7 +43,8 @@ def convert_to_markdown(raw_bytes: bytes, content_type: str, source_ref: str) ->
 
     TXT and MD content types are passed through without Docling conversion.
     For PDF, DOCX, and HTML, writes the raw bytes to a temp file, runs Docling,
-    and returns clean Markdown.
+    and returns clean Markdown. If the first pass yields empty output for a PDF,
+    retries with force_full_page_ocr to handle image-heavy/scanned documents.
     """
     # Pass-through for plain text — no Markdown structure, return as-is
     if content_type == "txt":
@@ -56,6 +79,17 @@ def convert_to_markdown(raw_bytes: bytes, content_type: str, source_ref: str) ->
         converter = _get_converter()
         result = converter.convert(tmp_path)
         markdown = result.document.export_to_markdown()
+
+        # Retry with full-page OCR if first pass produced no text (image-heavy PDF)
+        if not markdown.strip() and content_type == "pdf":
+            log.warning(
+                "empty markdown from standard conversion, retrying with full-page OCR",
+                source_ref=source_ref,
+            )
+            ocr_converter = _get_ocr_converter()
+            result = ocr_converter.convert(tmp_path)
+            markdown = result.document.export_to_markdown()
+
         log.info(
             "conversion complete",
             source_ref=source_ref,
