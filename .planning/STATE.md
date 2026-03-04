@@ -10,16 +10,16 @@ See: .planning/PROJECT.md (updated 2026-03-03)
 ## Current Position
 
 Phase: 6 of 6 (Reliability & Observability)
-Plan: 06-01 complete
-Status: Plan 06-01 complete — structured error classification with error_type, error_stage, and per-stage error handling in workers
-Last activity: 2026-03-04 — Plan 06-01 executed (error classification fields, per-stage error handling in converter and chunker)
+Plan: 06-02 complete
+Status: Plan 06-02 complete — structured JSON logging with trace IDs and per-stage timing across the pipeline
+Last activity: 2026-03-04 — Plan 06-02 executed (logging config, request logging middleware, trace_id propagation, per-stage timing)
 
-Progress: █████████░ 90%
+Progress: █████████▌ 95%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 6
+- Total plans completed: 7
 - Average duration: —
 - Total execution time: —
 
@@ -32,10 +32,10 @@ Progress: █████████░ 90%
 | 03-chunking-embedding | 1/? | — | — |
 | 04-search-document-management | 1/? | — | — |
 | 05-auth-multi-tenancy | 1/? | — | — |
-| 06-reliability-observability | 1/? | — | — |
+| 06-reliability-observability | 2/? | — | — |
 
 **Recent Trend:**
-- Last 5 plans: 02-01, 03-01, 04-01, 05-01, 06-01
+- Last 5 plans: 03-01, 04-01, 05-01, 06-01, 06-02
 - Trend: —
 
 ## Accumulated Context
@@ -56,6 +56,9 @@ Recent decisions affecting current work:
 - Plan 05-01: Tenant type alias switched from resolve_tenant to resolve_tenant_with_rate_limit for API endpoints
 - Plan 06-01: Error classification uses plain strings (no enum) for flexibility — error types defined by convention in workers
 - Plan 06-01: Missing document records now update status to FAILED instead of silently returning
+- Plan 06-02: structlog contextvars used for trace_id propagation across request and worker boundaries
+- Plan 06-02: Per-stage timing uses time.monotonic() for accurate elapsed measurement
+- Plan 06-02: Workers use finally block for contextvars cleanup to ensure cleanup even on unexpected exceptions
 
 ### Pending Todos
 
@@ -68,5 +71,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-04
-Stopped at: Plan 06-01 complete — structured error classification with per-stage error handling in converter and chunker workers
-Resume file: .planning/phases/06-reliability-observability/06-01-SUMMARY.md
+Stopped at: Plan 06-02 complete — structured JSON logging with trace IDs and per-stage timing
+Resume file: .planning/phases/06-reliability-observability/06-02-SUMMARY.md
