@@ -10,8 +10,8 @@ DocIngest goes from zero to a working multi-tenant document ingestion engine in 
 - Integer phases (1, 2, 3): Planned milestone work
 - Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
 
-- [ ] **Phase 1: Foundation & Infrastructure** - Docker Compose runs all services locally with health checks
-- [ ] **Phase 2: Document Parsing** - Upload and convert PDF, DOCX, HTML, TXT, MD to processable text
+- [x] **Phase 1: Foundation & Infrastructure** - Docker Compose runs all services locally with health checks
+- [x] **Phase 2: Document Parsing** - Upload and convert PDF, DOCX, HTML, TXT, MD to processable text
 - [ ] **Phase 3: Chunking & Embedding** - Split text into chunks, vectorize, orchestrate full async pipeline
 - [ ] **Phase 4: Search & Document Management** - Semantic search and document deletion with vector cleanup
 - [ ] **Phase 5: Auth & Multi-Tenancy** - API key auth with tenant-scoped, isolated operations
@@ -115,8 +115,8 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation & Infrastructure | 0/TBD | Not started | - |
-| 2. Document Parsing | 0/TBD | Not started | - |
+| 1. Foundation & Infrastructure | 1/1 | Complete | 2026-03-03 |
+| 2. Document Parsing | 1/1 | Complete | 2026-03-04 |
 | 3. Chunking & Embedding | 0/TBD | Not started | - |
 | 4. Search & Document Management | 0/TBD | Not started | - |
 | 5. Auth & Multi-Tenancy | 0/TBD | Not started | - |

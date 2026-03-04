@@ -101,18 +101,18 @@ Which phases cover which requirements. Updated by create-roadmap.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| PARSE-01 | Phase 2 | Pending |
-| PARSE-02 | Phase 2 | Pending |
-| PARSE-03 | Phase 2 | Pending |
-| PARSE-04 | Phase 2 | Pending |
+| PARSE-01 | Phase 2 | Complete |
+| PARSE-02 | Phase 2 | Complete |
+| PARSE-03 | Phase 2 | Complete |
+| PARSE-04 | Phase 2 | Complete |
 | CHUNK-01 | Phase 3 | Pending |
 | CHUNK-02 | Phase 3 | Pending |
 | CHUNK-03 | Phase 3 | Pending |
 | PIPE-01 | Phase 3 | Pending |
 | PIPE-02 | Phase 6 | Pending |
 | PIPE-03 | Phase 6 | Pending |
-| PIPE-04 | Phase 2 | Pending |
-| PIPE-05 | Phase 1 | Pending |
+| PIPE-04 | Phase 2 | Complete |
+| PIPE-05 | Phase 1 | Complete |
 | PIPE-06 | Phase 6 | Pending |
 | PIPE-07 | Phase 4 | Pending |
 | SRCH-01 | Phase 4 | Pending |
@@ -121,8 +121,8 @@ Which phases cover which requirements. Updated by create-roadmap.
 | AUTH-02 | Phase 5 | Pending |
 | AUTH-03 | Phase 5 | Pending |
 | AUTH-04 | Phase 5 | Pending |
-| INFRA-01 | Phase 1 | Pending |
-| INFRA-02 | Phase 1 | Pending |
+| INFRA-01 | Phase 1 | Complete |
+| INFRA-02 | Phase 1 | Complete |
 | INFRA-03 | Phase 6 | Pending |
 
 **Coverage:**
