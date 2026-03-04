@@ -105,10 +105,10 @@ Which phases cover which requirements. Updated by create-roadmap.
 | PARSE-02 | Phase 2 | Complete |
 | PARSE-03 | Phase 2 | Complete |
 | PARSE-04 | Phase 2 | Complete |
-| CHUNK-01 | Phase 3 | Pending |
-| CHUNK-02 | Phase 3 | Pending |
-| CHUNK-03 | Phase 3 | Pending |
-| PIPE-01 | Phase 3 | Pending |
+| CHUNK-01 | Phase 3 | Complete |
+| CHUNK-02 | Phase 3 | Complete |
+| CHUNK-03 | Phase 3 | Complete |
+| PIPE-01 | Phase 3 | Complete |
 | PIPE-02 | Phase 6 | Pending |
 | PIPE-03 | Phase 6 | Pending |
 | PIPE-04 | Phase 2 | Complete |
@@ -132,4 +132,4 @@ Which phases cover which requirements. Updated by create-roadmap.
 
 ---
 *Requirements defined: 2026-03-03*
-*Last updated: 2026-03-03 after roadmap creation*
+*Last updated: 2026-03-04 after Phase 3 completion*
