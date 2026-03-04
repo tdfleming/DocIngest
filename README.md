@@ -12,12 +12,19 @@ Upload a PDF, DOCX, HTML, TXT, or Markdown file and DocIngest will convert it to
 - **Vector search** -- Qdrant-powered similarity search with optional cross-encoder reranking
 - **Multi-tenancy** -- per-tenant API keys, Qdrant collections, and blob storage paths
 - **Async pipeline** -- Upload → Convert → Chunk → Embed → Store via ARQ job queue
+- **Web UI** -- React frontend for document upload, status tracking, and search
 - **Rate limiting** -- Redis token-bucket per API key (fail-open)
 - **Observability** -- structured JSON logging with trace IDs and per-stage timing
 
 ## Architecture
 
 ```
+┌──────────┐     ┌──────────────┐
+│  Browser  │────▶│   Frontend   │  :3000
+└──────────┘     │  (React UI)  │
+                 └──────┬───────┘
+                        │
+                        ▼
 ┌──────────┐     ┌──────────────┐     ┌──────────────────┐     ┌─────────┐
 │  Client   │────▶│  FastAPI API  │────▶│  Redis (ARQ)      │────▶│ Workers │
 └──────────┘     └──────────────┘     └──────────────────┘     └────┬────┘
@@ -30,7 +37,7 @@ Upload a PDF, DOCX, HTML, TXT, or Markdown file and DocIngest will convert it to
                    └─────────┘ └─────────┘   └──────────┘
 ```
 
-**Services:** API server, converter workers (Docling), chunker workers (embed + store), folder watcher
+**Services:** React frontend, API server, converter workers (Docling), chunker workers (embed + store), folder watcher
 
 ## Quick Start
 
@@ -54,6 +61,9 @@ curl -X POST http://localhost:8000/v1/search \
   -H "X-API-Key: <your-key>" \
   -H "Content-Type: application/json" \
   -d '{"query": "your search query", "top_k": 5}'
+
+# Or open the web UI
+open http://localhost:3000
 ```
 
 ## API Endpoints
@@ -96,6 +106,67 @@ Environment variables (see `.env.example` for defaults):
 | `EMBEDDING_BATCH_SIZE` | `100` | Embedding batch size |
 | `DEFAULT_RATE_LIMIT` | `100` | Requests/min per API key |
 
+## Hardware Requirements
+
+### Per-service memory profile
+
+| Service | Min RAM | Recommended RAM | Notes |
+|---------|---------|-----------------|-------|
+| `frontend` | 128 MB | 256 MB | Static file server |
+| `ingestion-api` | 256 MB | 512 MB | FastAPI + Uvicorn |
+| `converter-worker` ×2 | **2 GB each** | **4 GB each** | Docling loads layout, table structure, and reading-order ML models at startup (~1.5 GB model weight per process) |
+| `chunker-worker` ×2 | 512 MB each | 1 GB each | FastEmbed ONNX model ~130 MB; remainder is batch buffers |
+| `mongodb` | 512 MB | 2 GB | Working set should fit in RAM for index scans |
+| `qdrant` | 1 GB | 4 GB | HNSW index is on-disk; RAM used for OS page cache and active segments |
+| `redis` | 256 MB | 512 MB | Job payloads only; not a data store |
+| `minio` | 256 MB | 512 MB | Disk I/O bound |
+| **Total** | **~8 GB** | **~16 GB** | |
+
+### Minimum (development / low volume)
+
+- **CPU:** 4 cores
+- **RAM:** 8 GB
+- **Storage:** 20 GB SSD
+- **GPU:** Not required
+
+Expect converter throughput of roughly 1–3 pages/second on a modern laptop CPU. Docling's first run downloads ~1.5 GB of model weights; FastEmbed downloads ~130 MB.
+
+### Recommended (production)
+
+- **CPU:** 8+ cores — Docling benefits from thread parallelism within a single document; more cores also allow running more worker replicas
+- **RAM:** 16 GB — headroom for two Docling processes (up to 8 GB combined), Qdrant page-cache, and MongoDB working set
+- **Storage:** 100 GB+ NVMe SSD — Qdrant on-disk vectors for bge-small-en-v1.5 (384 dimensions) occupy ~1.5 KB per chunk including HNSW overhead; 1 M chunks ≈ 6–8 GB; MinIO holds raw source files plus converted Markdown
+- **GPU:** Optional but significant for high-volume ingestion
+
+### GPU acceleration
+
+Docling supports CUDA for layout detection and OCR, giving a **5–10× throughput improvement** on large or scanned PDFs. FastEmbed ONNX inference also runs on CUDA.
+
+Requirements when enabling GPU:
+
+- NVIDIA GPU with **8 GB+ VRAM** (e.g. RTX 3070/4070, A10, L4)
+- CUDA 12.x and matching `nvidia-container-toolkit` for Docker
+
+To enable, set the following in `.env` and rebuild the converter image:
+
+```
+USE_DOCLING_GPU=true
+```
+
+### Storage sizing guide
+
+| Asset | Size estimate |
+|-------|---------------|
+| Raw source file (10 MB PDF) | 10 MB in MinIO |
+| Converted Markdown | ~5% of source size |
+| Qdrant vectors @ 384 dims | ~1.5 KB per chunk |
+| MongoDB document record | ~2 KB per document |
+
+A corpus of 10 000 × 10 MB PDFs (100 GB raw) with ~500 chunks each produces roughly:
+- 5 GB Markdown in MinIO
+- ~8 GB in Qdrant (5 M vectors)
+- ~10 MB in MongoDB
+
 ## Local Development
 
 Requires Python 3.12+.
@@ -114,6 +185,9 @@ uvicorn docingest.api.app:app --host 0.0.0.0 --port 8000 --reload
 arq docingest.workers.converter.WorkerSettings
 arq docingest.workers.chunker.WorkerSettings
 
+# Run frontend dev server
+cd frontend && npm install && npm run dev
+
 # Run tests
 pytest
 
@@ -124,6 +198,7 @@ ruff check src/
 ## Tech Stack
 
 - **API:** FastAPI + Uvicorn
+- **Frontend:** React (served on :3000)
 - **Document conversion:** Docling (IBM)
 - **Embeddings:** FastEmbed (BAAI/bge-small-en-v1.5)
 - **Vector store:** Qdrant
@@ -135,6 +210,7 @@ ruff check src/
 ## Project Structure
 
 ```
+frontend/               # React web UI
 src/docingest/
 ├── api/                # FastAPI app, auth, middleware, routes
 ├── db/                 # MongoDB, Qdrant, Redis, MinIO clients

@@ -136,7 +136,7 @@ async def convert_document(ctx: dict, doc_id: str, tenant_id: str, trace_id: str
 
         # Enqueue chunking job
         pool = await get_redis_pool()
-        await pool.enqueue_job("chunk_and_embed", doc_id=doc_id, tenant_id=tenant_id, trace_id=trace_id)
+        await pool.enqueue_job("chunk_and_embed", doc_id=doc_id, tenant_id=tenant_id, trace_id=trace_id, _queue_name="arq:queue:chunk")
 
         log.info(
             "conversion complete",
@@ -169,6 +169,7 @@ async def convert_document(ctx: dict, doc_id: str, tenant_id: str, trace_id: str
 class WorkerSettings:
     functions = [convert_document]
     redis_settings = get_redis_settings()
+    queue_name = "arq:queue:convert"
     max_jobs = 4
     job_timeout = 600  # 10 min — Docling can be slow on large PDFs
     max_tries = 3

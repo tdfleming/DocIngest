@@ -102,7 +102,7 @@ class DocumentListResponse(BaseModel):
 
 async def _enqueue_conversion(doc_id: str, tenant_id: str, trace_id: str) -> None:
     pool = await get_redis_pool()
-    await pool.enqueue_job("convert_document", doc_id=doc_id, tenant_id=tenant_id, trace_id=trace_id)
+    await pool.enqueue_job("convert_document", doc_id=doc_id, tenant_id=tenant_id, trace_id=trace_id, _queue_name="arq:queue:convert")
 
 
 def _doc_to_response(doc: dict) -> DocumentResponse:
@@ -344,9 +344,12 @@ async def reprocess_document(request: Request, tenant: Tenant, doc_id: str):
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
 
-    # Delete existing chunks
-    qdrant = await get_qdrant()
-    await delete_doc_chunks(qdrant, tenant["tenant_id"], doc_id)
+    # Delete existing chunks (may not exist on first processing)
+    try:
+        qdrant = await get_qdrant()
+        await delete_doc_chunks(qdrant, tenant["tenant_id"], doc_id)
+    except Exception:
+        pass
 
     # Increment version and reset status
     await increment_version(db, doc_id)

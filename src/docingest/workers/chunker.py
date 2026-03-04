@@ -223,6 +223,7 @@ async def chunk_and_embed(ctx: dict, doc_id: str, tenant_id: str, trace_id: str 
 class WorkerSettings:
     functions = [chunk_and_embed]
     redis_settings = get_redis_settings()
+    queue_name = "arq:queue:chunk"
     max_jobs = 8
     job_timeout = 300
     max_tries = 3
