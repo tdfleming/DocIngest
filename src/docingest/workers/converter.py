@@ -13,10 +13,13 @@ from docingest.logging_config import configure_logging
 
 configure_logging()
 
+import asyncio
+
 from docingest.db.blob import download_blob, get_blob_client, upload_blob
 from docingest.db.mongodb import get_db, update_document_status
 from docingest.db.redis import get_redis_pool, get_redis_settings
 from docingest.models.document import DocumentStatus
+from docingest.services.app_logger import log_event
 from docingest.services.conversion import convert_to_markdown, extract_metadata
 
 log = structlog.get_logger()
@@ -29,6 +32,12 @@ async def convert_document(ctx: dict, doc_id: str, tenant_id: str, trace_id: str
 
     try:
         await update_document_status(db, doc_id, DocumentStatus.CONVERTING)
+        asyncio.create_task(
+            log_event(
+                "info", "conversion_start", "converter",
+                trace_id=trace_id, doc_id=doc_id, tenant_id=tenant_id,
+            )
+        )
 
         # Stage: fetch document record
         from bson import ObjectId
@@ -138,6 +147,19 @@ async def convert_document(ctx: dict, doc_id: str, tenant_id: str, trace_id: str
         pool = await get_redis_pool()
         await pool.enqueue_job("chunk_and_embed", doc_id=doc_id, tenant_id=tenant_id, trace_id=trace_id, _queue_name="arq:queue:chunk")
 
+        asyncio.create_task(
+            log_event(
+                "info", "conversion_complete", "converter",
+                trace_id=trace_id, doc_id=doc_id, tenant_id=tenant_id,
+                details={
+                    "word_count": meta.get("word_count"),
+                    "download_ms": download_ms,
+                    "convert_ms": convert_ms,
+                    "upload_ms": upload_ms,
+                },
+            )
+        )
+
         log.info(
             "conversion complete",
             word_count=meta.get("word_count"),
@@ -151,6 +173,13 @@ async def convert_document(ctx: dict, doc_id: str, tenant_id: str, trace_id: str
             "conversion failed",
             error_type="unknown_error",
             error=str(e),
+        )
+        asyncio.create_task(
+            log_event(
+                "error", "conversion_failed", "converter",
+                trace_id=trace_id, doc_id=doc_id, tenant_id=tenant_id,
+                error=str(e),
+            )
         )
         await update_document_status(
             db,

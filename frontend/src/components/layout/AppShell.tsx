@@ -8,6 +8,9 @@ const titleMap: Record<string, string> = {
   "/documents": "Documents",
   "/search": "Search",
   "/config": "Configuration",
+  "/admin/users": "User Management",
+  "/admin/logs": "Application Logs",
+  "/admin/api-keys": "API Key Management",
 };
 
 export default function AppShell() {

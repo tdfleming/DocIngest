@@ -6,8 +6,10 @@ import structlog
 from fastapi import APIRouter, File, HTTPException, Query, Request, UploadFile
 from pydantic import BaseModel, Field, HttpUrl
 
+from fastapi.responses import PlainTextResponse
+
 from docingest.api.auth import Tenant
-from docingest.db.blob import delete_blob, get_blob_client, upload_blob
+from docingest.db.blob import delete_blob, download_blob, get_blob_client, upload_blob
 from docingest.db.mongodb import (
     delete_document,
     find_by_hash,
@@ -359,3 +361,27 @@ async def reprocess_document(request: Request, tenant: Tenant, doc_id: str):
     log.info("document reprocessing", doc_id=doc_id, trace_id=trace_id)
 
     return {"id": doc_id, "status": "pending", "version": doc.get("version", 1) + 1}
+
+
+@router.get("/documents/{doc_id}/markdown")
+async def get_document_markdown(tenant: Tenant, doc_id: str):
+    """Download the converted markdown for a document."""
+    db = await get_db()
+    doc = await get_document(db, doc_id, tenant["tenant_id"])
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    if doc["status"] not in ("converted", "chunking", "complete"):
+        raise HTTPException(status_code=400, detail="Document not yet converted")
+
+    md_blob_path = doc.get("markdown_blob_path")
+    if not md_blob_path:
+        raise HTTPException(status_code=404, detail="Markdown file not found")
+
+    blob_client = get_blob_client()
+    try:
+        md_bytes = download_blob(blob_client, tenant["tenant_id"], md_blob_path)
+    except Exception:
+        raise HTTPException(status_code=404, detail="Markdown file not found in storage")
+
+    return PlainTextResponse(md_bytes.decode("utf-8"), media_type="text/markdown")

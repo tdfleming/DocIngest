@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from docingest.api.middleware import RateLimitHeaderMiddleware, RequestLoggingMiddleware
-from docingest.api.routes import documents, health, search
+from docingest.api.routes import admin, auth, documents, health, search
 from docingest.db.blob import close_blob, ensure_bucket, get_blob_client
 from docingest.db.mongodb import close_db, ensure_indexes, get_db
 from docingest.db.qdrant import close_qdrant
@@ -55,3 +55,5 @@ app.add_middleware(RateLimitHeaderMiddleware)
 app.include_router(health.router, prefix="/v1", tags=["health"])
 app.include_router(documents.router, prefix="/v1", tags=["documents"])
 app.include_router(search.router, prefix="/v1", tags=["search"])
+app.include_router(auth.router, prefix="/v1", tags=["auth"])
+app.include_router(admin.router, prefix="/v1", tags=["admin"])

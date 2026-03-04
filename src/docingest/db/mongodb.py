@@ -32,6 +32,13 @@ async def ensure_indexes(db: AsyncIOMotorDatabase) -> None:
     await db.documents.create_index([("tenant_id", 1), ("status", 1)])
     await db.documents.create_index([("tenant_id", 1), ("created_at", -1)])
     await db.api_keys.create_index("key_hash", unique=True)
+    await db.api_keys.create_index("tenant_id")
+    await db.users.create_index("username", unique=True)
+    await db.app_logs.create_index("created_at", expireAfterSeconds=604800)  # 7-day TTL
+    await db.app_logs.create_index([("level", 1), ("created_at", -1)])
+    await db.app_logs.create_index("trace_id")
+    await db.app_logs.create_index("doc_id")
+    await db.app_logs.create_index("component")
 
 
 # --- Document operations ---

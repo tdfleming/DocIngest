@@ -76,3 +76,8 @@ export async function reprocessDocument(
   );
   return data;
 }
+
+export async function getDocumentMarkdown(docId: string): Promise<string> {
+  const { data } = await client.get<string>(`/documents/${docId}/markdown`);
+  return data;
+}

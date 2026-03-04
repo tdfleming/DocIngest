@@ -16,12 +16,15 @@ from docingest.logging_config import configure_logging
 
 configure_logging()
 
+import asyncio
+
 from docingest.db.blob import download_blob, get_blob_client
 from docingest.db.mongodb import get_db, get_document, update_document_status
 from docingest.db.qdrant import ensure_collection, get_qdrant, upsert_chunks
 from docingest.db.redis import get_redis_settings
 from docingest.models.document import DocumentStatus
 from docingest.services.chunking import chunk_document
+from docingest.services.app_logger import log_event
 from docingest.services.embedding import embed_texts
 
 log = structlog.get_logger()
@@ -35,6 +38,12 @@ async def chunk_and_embed(ctx: dict, doc_id: str, tenant_id: str, trace_id: str 
 
     try:
         await update_document_status(db, doc_id, DocumentStatus.CHUNKING)
+        asyncio.create_task(
+            log_event(
+                "info", "chunking_start", "chunker",
+                trace_id=trace_id, doc_id=doc_id, tenant_id=tenant_id,
+            )
+        )
 
         # Stage: fetch document record
         doc = await get_document(db, doc_id, tenant_id)
@@ -191,6 +200,20 @@ async def chunk_and_embed(ctx: dict, doc_id: str, tenant_id: str, trace_id: str 
             },
         )
 
+        asyncio.create_task(
+            log_event(
+                "info", "chunking_complete", "chunker",
+                trace_id=trace_id, doc_id=doc_id, tenant_id=tenant_id,
+                details={
+                    "chunks": len(chunks),
+                    "download_ms": download_ms,
+                    "chunk_ms": chunk_ms,
+                    "embed_ms": embed_ms,
+                    "upsert_ms": upsert_ms,
+                },
+            )
+        )
+
         log.info(
             "chunking complete",
             chunks=len(chunks),
@@ -205,6 +228,13 @@ async def chunk_and_embed(ctx: dict, doc_id: str, tenant_id: str, trace_id: str 
             "chunking failed unexpectedly",
             error_type="unknown_error",
             error=str(e),
+        )
+        asyncio.create_task(
+            log_event(
+                "error", "chunking_failed", "chunker",
+                trace_id=trace_id, doc_id=doc_id, tenant_id=tenant_id,
+                error=str(e),
+            )
         )
         await update_document_status(
             db,

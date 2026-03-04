@@ -1,5 +1,5 @@
 import { IconButton, Td, Tooltip, Tr } from "@chakra-ui/react";
-import { FiRefreshCw, FiTrash2 } from "react-icons/fi";
+import { FiEye, FiRefreshCw, FiTrash2 } from "react-icons/fi";
 import type { DocumentResponse } from "../../api/types";
 import StatusBadge from "./StatusBadge";
 
@@ -7,6 +7,7 @@ interface DocumentRowProps {
   doc: DocumentResponse;
   onDelete: (doc: DocumentResponse) => void;
   onReprocess: (docId: string) => void;
+  onViewMarkdown?: (docId: string) => void;
   isReprocessing: boolean;
 }
 
@@ -22,8 +23,12 @@ export default function DocumentRow({
   doc,
   onDelete,
   onReprocess,
+  onViewMarkdown,
   isReprocessing,
 }: DocumentRowProps) {
+  const canViewMarkdown =
+    doc.status === "converted" || doc.status === "chunking" || doc.status === "complete";
+
   return (
     <Tr>
       <Td className="max-w-xs truncate" title={doc.source_ref}>
@@ -40,6 +45,18 @@ export default function DocumentRow({
         {new Date(doc.created_at).toLocaleString()}
       </Td>
       <Td>
+        {canViewMarkdown && onViewMarkdown && (
+          <Tooltip label="View Markdown">
+            <IconButton
+              aria-label="View Markdown"
+              icon={<FiEye />}
+              size="xs"
+              variant="ghost"
+              colorScheme="blue"
+              onClick={() => onViewMarkdown(doc.id)}
+            />
+          </Tooltip>
+        )}
         <Tooltip label="Reprocess">
           <IconButton
             aria-label="Reprocess"

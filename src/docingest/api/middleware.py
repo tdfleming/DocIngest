@@ -1,5 +1,6 @@
 """Middleware for rate limit headers and request logging with trace IDs."""
 
+import asyncio
 import time
 import uuid
 
@@ -7,6 +8,8 @@ import structlog
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.requests import Request
 from starlette.responses import Response
+
+from docingest.services.app_logger import log_event
 
 log = structlog.get_logger()
 
@@ -48,6 +51,21 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
             path=request.url.path,
             status=response.status_code,
             duration_ms=duration_ms,
+        )
+
+        asyncio.create_task(
+            log_event(
+                "info",
+                "http_request",
+                "middleware",
+                trace_id=trace_id,
+                details={
+                    "method": request.method,
+                    "path": request.url.path,
+                    "status": response.status_code,
+                    "duration_ms": duration_ms,
+                },
+            )
         )
 
         response.headers["X-Trace-Id"] = trace_id

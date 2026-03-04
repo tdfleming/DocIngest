@@ -22,6 +22,7 @@ import { useDocuments } from "../../hooks/useDocuments";
 import FilterBar from "./FilterBar";
 import DocumentRow from "./DocumentRow";
 import DeleteConfirmDialog from "./DeleteConfirmDialog";
+import MarkdownPreviewModal from "./MarkdownPreviewModal";
 
 export default function DocumentTable() {
   const [status, setStatus] = useState("");
@@ -47,6 +48,12 @@ export default function DocumentTable() {
     null
   );
   const [reprocessingId, setReprocessingId] = useState<string | null>(null);
+  const [previewDocId, setPreviewDocId] = useState<string | null>(null);
+  const {
+    isOpen: isPreviewOpen,
+    onOpen: onPreviewOpen,
+    onClose: onPreviewClose,
+  } = useDisclosure();
 
   const deleteMutation = useMutation({
     mutationFn: (docId: string) => deleteDocument(docId),
@@ -91,6 +98,11 @@ export default function DocumentTable() {
     reprocessMutation.mutate(docId);
   };
 
+  const handleViewMarkdown = (docId: string) => {
+    setPreviewDocId(docId);
+    onPreviewOpen();
+  };
+
   const totalPages = data ? Math.ceil(data.total / perPage) : 0;
 
   return (
@@ -133,6 +145,7 @@ export default function DocumentTable() {
                     doc={doc}
                     onDelete={handleDelete}
                     onReprocess={handleReprocess}
+                    onViewMarkdown={handleViewMarkdown}
                     isReprocessing={reprocessingId === doc.id}
                   />
                 ))}
@@ -170,6 +183,12 @@ export default function DocumentTable() {
         onConfirm={confirmDelete}
         isLoading={deleteMutation.isPending}
         sourceRef={deleteTarget?.source_ref ?? ""}
+      />
+
+      <MarkdownPreviewModal
+        docId={previewDocId}
+        isOpen={isPreviewOpen}
+        onClose={onPreviewClose}
       />
     </Box>
   );
