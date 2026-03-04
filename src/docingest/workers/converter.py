@@ -5,6 +5,8 @@ converts to Markdown via Docling, uploads Markdown back to MinIO, and enqueues
 the chunking job.
 """
 
+import time
+
 import structlog
 
 from docingest.db.blob import download_blob, get_blob_client, upload_blob
@@ -16,9 +18,10 @@ from docingest.services.conversion import convert_to_markdown, extract_metadata
 log = structlog.get_logger()
 
 
-async def convert_document(ctx: dict, doc_id: str, tenant_id: str) -> None:
+async def convert_document(ctx: dict, doc_id: str, tenant_id: str, trace_id: str = "") -> None:
     db = await get_db()
     blob_client = get_blob_client()
+    structlog.contextvars.bind_contextvars(trace_id=trace_id, doc_id=doc_id)
 
     try:
         await update_document_status(db, doc_id, DocumentStatus.CONVERTING)
@@ -28,7 +31,7 @@ async def convert_document(ctx: dict, doc_id: str, tenant_id: str) -> None:
 
         doc = await db.documents.find_one({"_id": ObjectId(doc_id)})
         if not doc:
-            log.error("document not found", doc_id=doc_id, error_type="not_found")
+            log.error("document not found", error_type="not_found")
             await update_document_status(
                 db,
                 doc_id,
@@ -43,11 +46,12 @@ async def convert_document(ctx: dict, doc_id: str, tenant_id: str) -> None:
 
         # Stage: download raw file
         try:
+            t0 = time.monotonic()
             raw_bytes = download_blob(blob_client, tenant_id, doc["blob_path"])
+            download_ms = round((time.monotonic() - t0) * 1000, 1)
         except Exception as e:
             log.error(
                 "download failed",
-                doc_id=doc_id,
                 error_type="download_error",
                 error=str(e),
             )
@@ -65,11 +69,12 @@ async def convert_document(ctx: dict, doc_id: str, tenant_id: str) -> None:
 
         # Stage: convert to markdown
         try:
+            t0 = time.monotonic()
             markdown = convert_to_markdown(raw_bytes, doc["content_type"], doc["source_ref"])
+            convert_ms = round((time.monotonic() - t0) * 1000, 1)
         except Exception as e:
             log.error(
                 "conversion to markdown failed",
-                doc_id=doc_id,
                 error_type="conversion_error",
                 error=str(e),
             )
@@ -88,13 +93,14 @@ async def convert_document(ctx: dict, doc_id: str, tenant_id: str) -> None:
         # Stage: upload markdown
         md_blob_path = f"markdown/{doc_id}.md"
         try:
+            t0 = time.monotonic()
             upload_blob(
                 blob_client, tenant_id, md_blob_path, markdown.encode("utf-8"), "text/markdown"
             )
+            upload_ms = round((time.monotonic() - t0) * 1000, 1)
         except Exception as e:
             log.error(
                 "markdown upload failed",
-                doc_id=doc_id,
                 error_type="upload_error",
                 error=str(e),
             )
@@ -126,14 +132,19 @@ async def convert_document(ctx: dict, doc_id: str, tenant_id: str) -> None:
 
         # Enqueue chunking job
         pool = await get_redis_pool()
-        await pool.enqueue_job("chunk_and_embed", doc_id=doc_id, tenant_id=tenant_id)
+        await pool.enqueue_job("chunk_and_embed", doc_id=doc_id, tenant_id=tenant_id, trace_id=trace_id)
 
-        log.info("conversion complete", doc_id=doc_id, word_count=meta.get("word_count"))
+        log.info(
+            "conversion complete",
+            word_count=meta.get("word_count"),
+            download_ms=download_ms,
+            convert_ms=convert_ms,
+            upload_ms=upload_ms,
+        )
 
     except Exception as e:
         log.error(
             "conversion failed",
-            doc_id=doc_id,
             error_type="unknown_error",
             error=str(e),
         )
@@ -147,6 +158,8 @@ async def convert_document(ctx: dict, doc_id: str, tenant_id: str) -> None:
                 "error_stage": "converting",
             },
         )
+    finally:
+        structlog.contextvars.unbind_contextvars("trace_id", "doc_id")
 
 
 class WorkerSettings:

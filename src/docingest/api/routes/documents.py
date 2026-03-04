@@ -1,8 +1,9 @@
 import hashlib
+import uuid
 from typing import Annotated
 
 import structlog
-from fastapi import APIRouter, File, HTTPException, Query, UploadFile
+from fastapi import APIRouter, File, HTTPException, Query, Request, UploadFile
 from pydantic import BaseModel, Field, HttpUrl
 
 from docingest.api.auth import Tenant
@@ -99,9 +100,9 @@ class DocumentListResponse(BaseModel):
 # --- Helpers ---
 
 
-async def _enqueue_conversion(doc_id: str, tenant_id: str) -> None:
+async def _enqueue_conversion(doc_id: str, tenant_id: str, trace_id: str) -> None:
     pool = await get_redis_pool()
-    await pool.enqueue_job("convert_document", doc_id=doc_id, tenant_id=tenant_id)
+    await pool.enqueue_job("convert_document", doc_id=doc_id, tenant_id=tenant_id, trace_id=trace_id)
 
 
 def _doc_to_response(doc: dict) -> DocumentResponse:
@@ -128,6 +129,7 @@ def _doc_to_response(doc: dict) -> DocumentResponse:
 
 @router.post("/documents", status_code=202)
 async def upload_document(
+    request: Request,
     tenant: Tenant,
     file: UploadFile = File(...),
     force: bool = Query(False),
@@ -181,31 +183,33 @@ async def upload_document(
 
     doc_id = await insert_document(db, doc_fields)
 
-    await _enqueue_conversion(doc_id, tenant["tenant_id"])
-    log.info("document uploaded", doc_id=doc_id, content_type=content_type)
+    state = getattr(request, "state", None)
+    trace_id = getattr(state, "trace_id", None) or uuid.uuid4().hex[:16]
+    await _enqueue_conversion(doc_id, tenant["tenant_id"], trace_id)
+    log.info("document uploaded", doc_id=doc_id, content_type=content_type, trace_id=trace_id)
 
     return {"id": doc_id, "status": "pending"}
 
 
 @router.post("/documents/url", status_code=202)
-async def ingest_from_url(tenant: Tenant, request: UrlIngestRequest):
-    if request.chunking_strategy is not None and request.chunking_strategy != "fixed":
+async def ingest_from_url(request: Request, tenant: Tenant, body: UrlIngestRequest):
+    if body.chunking_strategy is not None and body.chunking_strategy != "fixed":
         raise HTTPException(
             status_code=400,
-            detail=f"Unsupported chunking strategy: {request.chunking_strategy}",
+            detail=f"Unsupported chunking strategy: {body.chunking_strategy}",
         )
 
     import httpx
 
     async with httpx.AsyncClient(follow_redirects=True, timeout=60) as client:
-        resp = await client.get(str(request.url))
+        resp = await client.get(str(body.url))
         resp.raise_for_status()
 
     raw_bytes = resp.content
     file_size = len(raw_bytes)
     source_hash = hashlib.sha256(raw_bytes).hexdigest()
     content_type_header = resp.headers.get("content-type", "")
-    url_str = str(request.url)
+    url_str = str(body.url)
 
     # Detect type from URL extension or content-type header
     mime = content_type_header.split(";")[0].strip()
@@ -213,7 +217,7 @@ async def ingest_from_url(tenant: Tenant, request: UrlIngestRequest):
 
     db = await get_db()
 
-    if not request.force:
+    if not body.force:
         existing = await find_by_hash(db, tenant["tenant_id"], source_hash)
         if existing:
             return {"id": str(existing["_id"]), "status": "duplicate", "existing": True}
@@ -224,12 +228,12 @@ async def ingest_from_url(tenant: Tenant, request: UrlIngestRequest):
 
     # Build per-upload chunking config
     chunking_config: dict = {}
-    if request.chunk_size is not None:
-        chunking_config["chunk_size"] = request.chunk_size
-    if request.chunk_overlap is not None:
-        chunking_config["chunk_overlap"] = request.chunk_overlap
-    if request.chunking_strategy is not None:
-        chunking_config["strategy"] = request.chunking_strategy
+    if body.chunk_size is not None:
+        chunking_config["chunk_size"] = body.chunk_size
+    if body.chunk_overlap is not None:
+        chunking_config["chunk_overlap"] = body.chunk_overlap
+    if body.chunking_strategy is not None:
+        chunking_config["strategy"] = body.chunking_strategy
 
     doc_fields: dict = {
         "tenant_id": tenant["tenant_id"],
@@ -248,19 +252,21 @@ async def ingest_from_url(tenant: Tenant, request: UrlIngestRequest):
 
     doc_id = await insert_document(db, doc_fields)
 
-    await _enqueue_conversion(doc_id, tenant["tenant_id"])
-    log.info("url ingested", doc_id=doc_id, url=url_str)
+    state = getattr(request, "state", None)
+    trace_id = getattr(state, "trace_id", None) or uuid.uuid4().hex[:16]
+    await _enqueue_conversion(doc_id, tenant["tenant_id"], trace_id)
+    log.info("url ingested", doc_id=doc_id, url=url_str, trace_id=trace_id)
 
     return {"id": doc_id, "status": "pending"}
 
 
 @router.post("/documents/batch", status_code=202)
-async def batch_ingest(tenant: Tenant, request: BatchUrlRequest):
+async def batch_ingest(request: Request, tenant: Tenant, body: BatchUrlRequest):
     results = []
-    for url in request.urls:
+    for url in body.urls:
         try:
             result = await ingest_from_url(
-                tenant, UrlIngestRequest(url=url, force=request.force)
+                request, tenant, UrlIngestRequest(url=url, force=body.force)
             )
             results.append({"url": str(url), **result})
         except Exception as e:
@@ -332,7 +338,7 @@ async def delete_document_route(tenant: Tenant, doc_id: str):
 
 
 @router.post("/documents/{doc_id}/reprocess", status_code=202)
-async def reprocess_document(tenant: Tenant, doc_id: str):
+async def reprocess_document(request: Request, tenant: Tenant, doc_id: str):
     db = await get_db()
     doc = await get_document(db, doc_id, tenant["tenant_id"])
     if not doc:
@@ -344,7 +350,9 @@ async def reprocess_document(tenant: Tenant, doc_id: str):
 
     # Increment version and reset status
     await increment_version(db, doc_id)
-    await _enqueue_conversion(doc_id, tenant["tenant_id"])
-    log.info("document reprocessing", doc_id=doc_id)
+    state = getattr(request, "state", None)
+    trace_id = getattr(state, "trace_id", None) or uuid.uuid4().hex[:16]
+    await _enqueue_conversion(doc_id, tenant["tenant_id"], trace_id)
+    log.info("document reprocessing", doc_id=doc_id, trace_id=trace_id)
 
     return {"id": doc_id, "status": "pending", "version": doc.get("version", 1) + 1}

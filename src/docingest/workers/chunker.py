@@ -5,6 +5,7 @@ runs the two-pass chunker, embeds chunks via FastEmbed, and upserts vectors
 to Qdrant.
 """
 
+import time
 import uuid
 from datetime import datetime
 
@@ -22,10 +23,11 @@ from docingest.services.embedding import embed_texts
 log = structlog.get_logger()
 
 
-async def chunk_and_embed(ctx: dict, doc_id: str, tenant_id: str) -> None:
+async def chunk_and_embed(ctx: dict, doc_id: str, tenant_id: str, trace_id: str = "") -> None:
     db = await get_db()
     blob_client = get_blob_client()
     qdrant = await get_qdrant()
+    structlog.contextvars.bind_contextvars(trace_id=trace_id, doc_id=doc_id)
 
     try:
         await update_document_status(db, doc_id, DocumentStatus.CHUNKING)
@@ -33,7 +35,7 @@ async def chunk_and_embed(ctx: dict, doc_id: str, tenant_id: str) -> None:
         # Stage: fetch document record
         doc = await get_document(db, doc_id, tenant_id)
         if not doc:
-            log.error("document not found", doc_id=doc_id, error_type="not_found")
+            log.error("document not found", error_type="not_found")
             await update_document_status(
                 db,
                 doc_id,
@@ -48,12 +50,13 @@ async def chunk_and_embed(ctx: dict, doc_id: str, tenant_id: str) -> None:
 
         # Stage: download markdown
         try:
+            t0 = time.monotonic()
             markdown_bytes = download_blob(blob_client, tenant_id, doc["markdown_blob_path"])
             markdown = markdown_bytes.decode("utf-8")
+            download_ms = round((time.monotonic() - t0) * 1000, 1)
         except Exception as e:
             log.error(
                 "markdown download failed",
-                doc_id=doc_id,
                 error_type="download_error",
                 error=str(e),
             )
@@ -71,16 +74,17 @@ async def chunk_and_embed(ctx: dict, doc_id: str, tenant_id: str) -> None:
 
         # Stage: chunk document
         try:
+            t0 = time.monotonic()
             chunk_cfg = doc.get("chunking_config", {})
             chunks = chunk_document(
                 markdown,
                 max_tokens=chunk_cfg.get("chunk_size"),
                 overlap_percent=chunk_cfg.get("chunk_overlap"),
             )
+            chunk_ms = round((time.monotonic() - t0) * 1000, 1)
         except Exception as e:
             log.error(
                 "chunking failed",
-                doc_id=doc_id,
                 error_type="chunking_error",
                 error=str(e),
             )
@@ -97,7 +101,7 @@ async def chunk_and_embed(ctx: dict, doc_id: str, tenant_id: str) -> None:
             return
 
         if not chunks:
-            log.warning("no chunks produced", doc_id=doc_id)
+            log.warning("no chunks produced")
             await update_document_status(
                 db, doc_id, DocumentStatus.COMPLETE, extra_fields={"chunk_count": 0}
             )
@@ -105,12 +109,13 @@ async def chunk_and_embed(ctx: dict, doc_id: str, tenant_id: str) -> None:
 
         # Stage: embed texts
         try:
+            t0 = time.monotonic()
             texts = [c["chunk_text"] for c in chunks]
             vectors = embed_texts(texts)
+            embed_ms = round((time.monotonic() - t0) * 1000, 1)
         except Exception as e:
             log.error(
                 "embedding failed",
-                doc_id=doc_id,
                 error_type="embedding_error",
                 error=str(e),
             )
@@ -128,6 +133,7 @@ async def chunk_and_embed(ctx: dict, doc_id: str, tenant_id: str) -> None:
 
         # Stage: upsert to Qdrant
         try:
+            t0 = time.monotonic()
             await ensure_collection(qdrant, tenant_id)
             now = datetime.utcnow().isoformat()
 
@@ -152,10 +158,10 @@ async def chunk_and_embed(ctx: dict, doc_id: str, tenant_id: str) -> None:
             ]
 
             await upsert_chunks(qdrant, tenant_id, points)
+            upsert_ms = round((time.monotonic() - t0) * 1000, 1)
         except Exception as e:
             log.error(
                 "qdrant upsert failed",
-                doc_id=doc_id,
                 error_type="storage_error",
                 error=str(e),
             )
@@ -181,12 +187,18 @@ async def chunk_and_embed(ctx: dict, doc_id: str, tenant_id: str) -> None:
             },
         )
 
-        log.info("chunking complete", doc_id=doc_id, chunks=len(chunks))
+        log.info(
+            "chunking complete",
+            chunks=len(chunks),
+            download_ms=download_ms,
+            chunk_ms=chunk_ms,
+            embed_ms=embed_ms,
+            upsert_ms=upsert_ms,
+        )
 
     except Exception as e:
         log.error(
             "chunking failed unexpectedly",
-            doc_id=doc_id,
             error_type="unknown_error",
             error=str(e),
         )
@@ -200,6 +212,8 @@ async def chunk_and_embed(ctx: dict, doc_id: str, tenant_id: str) -> None:
                 "error_stage": "chunking",
             },
         )
+    finally:
+        structlog.contextvars.unbind_contextvars("trace_id", "doc_id")
 
 
 class WorkerSettings:
