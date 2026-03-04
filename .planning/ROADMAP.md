@@ -16,6 +16,7 @@ DocIngest goes from zero to a working multi-tenant document ingestion engine in 
 - [ ] **Phase 4: Search & Document Management** - Semantic search and document deletion with vector cleanup
 - [ ] **Phase 5: Auth & Multi-Tenancy** - API key auth with tenant-scoped, isolated operations
 - [x] **Phase 6: Reliability & Observability** - Status tracking, error reporting, structured logging
+- [ ] **Phase 7: Tech Debt Cleanup** - Fix deprecated APIs and docstring mismatches from audit
 
 ## Phase Details
 
@@ -108,10 +109,24 @@ Plans:
 Plans:
 - [ ] 06-01: TBD
 
+### Phase 7: Tech Debt Cleanup
+**Goal**: Clean up minor tech debt identified in v1 milestone audit
+**Depends on**: Phase 6
+**Requirements**: None (audit-driven cleanup)
+**Gap Closure**: Closes tech debt from v1-MILESTONE-AUDIT.md
+**Success Criteria** (what must be TRUE):
+  1. No `datetime.utcnow()` calls remain in codebase (replaced with `datetime.now(UTC)`)
+  2. Worker docstrings accurately describe their ARQ job function names
+**Research**: None needed
+**Plans**: 1
+
+Plans:
+- [ ] 07-01: Fix docstring mismatch and deprecated datetime calls
+
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
+Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -121,3 +136,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 4. Search & Document Management | 1/1 | Complete | 2026-03-04 |
 | 5. Auth & Multi-Tenancy | 1/1 | Complete | 2026-03-04 |
 | 6. Reliability & Observability | 2/2 | Complete | 2026-03-04 |
+| 7. Tech Debt Cleanup | 0/1 | Planned | — |
