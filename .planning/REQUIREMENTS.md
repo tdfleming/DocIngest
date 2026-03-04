@@ -117,10 +117,10 @@ Which phases cover which requirements. Updated by create-roadmap.
 | PIPE-07 | Phase 4 | Complete |
 | SRCH-01 | Phase 4 | Complete |
 | SRCH-02 | Phase 4 | Complete |
-| AUTH-01 | Phase 5 | Pending |
-| AUTH-02 | Phase 5 | Pending |
-| AUTH-03 | Phase 5 | Pending |
-| AUTH-04 | Phase 5 | Pending |
+| AUTH-01 | Phase 5 | Complete |
+| AUTH-02 | Phase 5 | Complete |
+| AUTH-03 | Phase 5 | Complete |
+| AUTH-04 | Phase 5 | Complete |
 | INFRA-01 | Phase 1 | Complete |
 | INFRA-02 | Phase 1 | Complete |
 | INFRA-03 | Phase 6 | Pending |
@@ -132,4 +132,4 @@ Which phases cover which requirements. Updated by create-roadmap.
 
 ---
 *Requirements defined: 2026-03-03*
-*Last updated: 2026-03-04 after Phase 4 completion*
+*Last updated: 2026-03-04 after Phase 5 completion*
