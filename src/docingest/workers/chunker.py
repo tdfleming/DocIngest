@@ -12,6 +12,10 @@ from datetime import datetime
 import structlog
 from qdrant_client.models import PointStruct
 
+from docingest.logging_config import configure_logging
+
+configure_logging()
+
 from docingest.db.blob import download_blob, get_blob_client
 from docingest.db.mongodb import get_db, get_document, update_document_status
 from docingest.db.qdrant import ensure_collection, get_qdrant, upsert_chunks

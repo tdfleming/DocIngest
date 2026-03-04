@@ -9,6 +9,10 @@ import time
 
 import structlog
 
+from docingest.logging_config import configure_logging
+
+configure_logging()
+
 from docingest.db.blob import download_blob, get_blob_client, upload_blob
 from docingest.db.mongodb import get_db, update_document_status
 from docingest.db.redis import get_redis_pool, get_redis_settings
