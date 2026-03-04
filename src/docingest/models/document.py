@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import StrEnum
 
 from pydantic import BaseModel, Field
@@ -53,8 +53,8 @@ class Document(BaseModel):
     error_stage: str | None = None
     chunk_count: int = 0
     version: int = 1
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     processed_at: datetime | None = None
 
     model_config = {"populate_by_name": True}

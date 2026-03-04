@@ -2,7 +2,7 @@
 
 ## What This Is
 
-A multi-tenant document ingestion engine that converts documents (PDF, HTML, DOCX) into semantically chunked, vectorized content for RAG and search use cases. Built as a containerized pipeline with FastAPI, MongoDB, Qdrant, Redis, and background workers. Originally built in a previous Claude Code session, now being picked up to get running and extend.
+A multi-tenant document ingestion engine that converts documents (PDF, HTML, DOCX, TXT, Markdown) into semantically chunked, vectorized content for RAG and search use cases. Built as a containerized pipeline with FastAPI, MongoDB, Qdrant, Redis, MinIO, and ARQ background workers. Runs fully locally via Docker Compose with no cloud dependencies.
 
 ## Core Value
 
@@ -12,47 +12,66 @@ Documents go in, searchable vectorized chunks come out — reliably and tenant-i
 
 ### Validated
 
-(None yet — ship to validate)
+- ✓ Local development environment runs without Azure dependencies — v1.0
+- ✓ Docker Compose brings up all services (API, workers, MongoDB, Qdrant, Redis, MinIO) — v1.0
+- ✓ API starts and health endpoint returns healthy — v1.0
+- ✓ End-to-end pipeline works: upload → convert → chunk → embed → search — v1.0
+- ✓ API key auth works for tenant-scoped operations — v1.0
+- ✓ Document parsing: PDF, DOCX, HTML via Docling; TXT/MD pass-through — v1.0
+- ✓ Per-upload chunking configuration (chunk_size, chunk_overlap, strategy) — v1.0
+- ✓ Semantic vector search with ranked results and document metadata — v1.0
+- ✓ Document deletion with full vector cleanup — v1.0
+- ✓ Per-key rate limiting with X-RateLimit headers (fail-open) — v1.0
+- ✓ Processing status tracking (queued/processing/completed/failed) — v1.0
+- ✓ Error classification with error_type, error_stage, and actionable messages — v1.0
+- ✓ Structured JSON logging with trace IDs and per-stage timing — v1.0
 
 ### Active
 
-- [ ] Local development environment runs without Azure dependencies (mock Blob Storage, mock Azure OpenAI)
-- [ ] Docker Compose brings up all services (API, workers, MongoDB, Qdrant, Redis)
-- [ ] API starts and health endpoint returns healthy
-- [ ] End-to-end pipeline works: upload document → convert → chunk → embed → search
-- [ ] Test suite covering core functionality (API routes, conversion, chunking, embedding, search)
-- [ ] API key auth works for tenant-scoped operations
+(None yet — define requirements for next milestone)
 
 ### Out of Scope
 
 - Azure cloud deployment — local/Docker only for now
 - Docker Swarm orchestration — Compose is sufficient for dev
 - Folder watcher service — nice-to-have, not needed to validate core pipeline
-- Production hardening (rate limiting tuning, scaling) — premature until core works
+- LLM answer generation — different product domain, return chunks for BYOLLM
+- Custom embedding model hosting — GPU complexity, support configurable endpoints instead
+- Real-time document sync (Drive, SharePoint) — OAuth complexity per connector
+- OCR for scanned PDFs — accuracy/performance concerns, defer to v2+
+- Graph RAG / knowledge graph — research-grade complexity for marginal gains
+- Fine-grained RBAC per document — tenant-level isolation sufficient for v1
 
 ## Context
 
-- Codebase was generated in a previous Claude Code session based on DESIGN.md
-- Python 3.12+ with FastAPI, ARQ (Redis job queue), Docling (doc conversion)
-- Existing code structure: `src/docingest/` with api/, db/, models/, services/ modules
-- Azure dependencies (Blob Storage, OpenAI embeddings) need local mock alternatives
-- Design specifies: MongoDB for metadata, Qdrant for vectors, Redis for job queue
-- Reranker provider is TBD in design — cross-encoder options listed but not decided
+Shipped v1.0 with 2,118 LOC Python.
+Tech stack: FastAPI, ARQ (Redis job queue), Docling (doc conversion), FastEmbed (bge-small-en-v1.5, 384-dim), MongoDB (metadata), Qdrant (vectors), Redis (jobs + rate limiting), MinIO (blob storage).
+All 23 v1 requirements shipped. No requirements adjusted or dropped.
+Milestone audit passed with 100% scores across all categories.
 
 ## Constraints
 
-- **Cloud services**: No Azure accounts available — must mock Blob Storage and Azure OpenAI locally
+- **Cloud services**: No Azure accounts available — must use local alternatives (MinIO, FastEmbed)
 - **Runtime**: Docker Compose for local development
 - **Language**: Python 3.12+ (established by existing codebase)
-- **Embeddings**: Need a local embedding model or mock to replace Azure OpenAI text-embedding-3-small
+- **Embeddings**: FastEmbed with bge-small-en-v1.5 (384-dim, local inference)
 
 ## Key Decisions
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Mock Azure services locally | No Azure resources available, need to run standalone | — Pending |
-| Docker Compose over Swarm | Dev environment simplicity | — Pending |
-| Skip folder watcher initially | Focus on core pipeline first | — Pending |
+| Replace Azure Blob with MinIO | No Azure resources available | ✓ Good — works seamlessly |
+| Replace Azure OpenAI with FastEmbed | Local embedding model, no API keys needed | ✓ Good — 384-dim, ~30MB model |
+| Single MinIO bucket with tenant path prefix | Simpler than per-tenant containers | ✓ Good — straightforward isolation |
+| Embedding dimensions 1536 → 384 | bge-small-en-v1.5 native dimension | ✓ Good — sufficient for v1 |
+| All blob/embedding functions sync | FastEmbed and MinIO clients are sync | ✓ Good — simpler than async wrappers |
+| TXT/MD pass-through (no Docling) | Plain text doesn't need conversion | ✓ Good — faster processing |
+| Rate limiter separate Redis connection | Avoid coupling with ARQ job queue | ✓ Good — independent lifecycle |
+| Rate limiter fails open | Redis failure shouldn't block API | ✓ Good — availability over strictness |
+| Error classification plain strings | Flexible, convention-based | ✓ Good — easy to extend |
+| structlog contextvars for trace_id | Propagates across request and worker boundaries | ✓ Good — zero-arg logging |
+| Per-stage timing via time.monotonic() | Accurate elapsed measurement | ✓ Good — not affected by clock drift |
+| Lambda for Pydantic default_factory | datetime.now(UTC) needs argument unlike utcnow | ✓ Good — clean pattern |
 
 ---
-*Last updated: 2026-03-03 after initialization*
+*Last updated: 2026-03-04 after v1.0 milestone*

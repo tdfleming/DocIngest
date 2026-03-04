@@ -1,13 +1,13 @@
 """ARQ worker: chunking + embedding.
 
-Consumes 'chunk_document' jobs from Redis. Downloads Markdown from MinIO,
+Consumes 'chunk_and_embed' jobs from Redis. Downloads Markdown from MinIO,
 runs the two-pass chunker, embeds chunks via FastEmbed, and upserts vectors
 to Qdrant.
 """
 
 import time
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
 
 import structlog
 from qdrant_client.models import PointStruct
@@ -139,7 +139,7 @@ async def chunk_and_embed(ctx: dict, doc_id: str, tenant_id: str, trace_id: str 
         try:
             t0 = time.monotonic()
             await ensure_collection(qdrant, tenant_id)
-            now = datetime.utcnow().isoformat()
+            now = datetime.now(UTC).isoformat()
 
             points = [
                 PointStruct(
@@ -187,7 +187,7 @@ async def chunk_and_embed(ctx: dict, doc_id: str, tenant_id: str, trace_id: str 
             DocumentStatus.COMPLETE,
             extra_fields={
                 "chunk_count": len(chunks),
-                "processed_at": datetime.utcnow(),
+                "processed_at": datetime.now(UTC),
             },
         )
 
