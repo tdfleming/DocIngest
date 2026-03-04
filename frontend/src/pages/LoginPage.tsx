@@ -9,6 +9,7 @@ import {
   FormControl,
   FormLabel,
   Heading,
+  Image,
   Input,
   Text,
   useToast,
@@ -60,10 +61,16 @@ export default function LoginPage() {
     <Flex className="min-h-screen items-center justify-center" bg="gray.50">
       <Card className="w-full max-w-md" shadow="lg">
         <CardHeader className="text-center pb-0">
+          <Flex justify="center" mb={3}>
+            <Image src="/logo.png" alt="DocIngest" boxSize="64px" />
+          </Flex>
           <Heading size="lg" color="brand.600">
             DocIngest
           </Heading>
-          <Text className="mt-2 text-gray-500">
+          <Text className="mt-1" fontSize="sm" color="gray.500">
+            Advanced Document Ingestion &amp; Semantic Processing
+          </Text>
+          <Text className="mt-3 text-gray-500">
             {needsBootstrap
               ? "Create Admin Account"
               : "Sign In"}

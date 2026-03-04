@@ -7,21 +7,29 @@ const theme = extendTheme({
   },
   colors: {
     brand: {
-      50: "#e6f2ff",
-      100: "#b3d9ff",
-      200: "#80bfff",
-      300: "#4da6ff",
-      400: "#1a8cff",
-      500: "#0073e6",
-      600: "#005ab4",
-      700: "#004182",
-      800: "#002851",
-      900: "#001020",
+      50: "#e8f4fd",
+      100: "#b9ddf8",
+      200: "#8ac6f3",
+      300: "#5bafee",
+      400: "#1392E6",
+      500: "#0f7bc4",
+      600: "#183550",
+      700: "#122a40",
+      800: "#0c1e30",
+      900: "#061320",
+    },
+    teal: {
+      400: "#4FD0C6",
+      500: "#3dbfb5",
+    },
+    success: {
+      400: "#48B878",
+      500: "#3da566",
     },
   },
   fonts: {
-    heading: `'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`,
-    body: `'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`,
+    heading: `'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`,
+    body: `'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`,
   },
 });
 
