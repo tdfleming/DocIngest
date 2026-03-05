@@ -15,6 +15,7 @@ Upload a PDF, DOCX, HTML, TXT, or Markdown file and DocIngest will convert it to
 - **Web UI** -- React frontend for document upload, status tracking, and search
 - **Rate limiting** -- Redis token-bucket per API key (fail-open)
 - **Observability** -- structured JSON logging with trace IDs and per-stage timing
+- **Performance optimized** -- thread-pooled sync I/O, concurrent health checks, batched Qdrant upserts, Lua script caching, collection caching, aggregation-based dashboard stats
 
 ## Architecture
 
@@ -74,8 +75,9 @@ All endpoints require an `X-API-Key` header.
 |--------|------|-------------|
 | `POST` | `/v1/documents` | Upload a file |
 | `POST` | `/v1/documents/url` | Ingest from URL |
-| `POST` | `/v1/documents/batch` | Batch ingest |
+| `POST` | `/v1/documents/batch` | Batch ingest (concurrent) |
 | `GET` | `/v1/documents` | List documents (paginated) |
+| `GET` | `/v1/documents/stats` | Aggregated document counts by status |
 | `GET` | `/v1/documents/{id}` | Get document status |
 | `DELETE` | `/v1/documents/{id}` | Delete document and chunks |
 | `POST` | `/v1/documents/{id}/reprocess` | Re-convert and re-chunk |
@@ -166,6 +168,37 @@ A corpus of 10 000 × 10 MB PDFs (100 GB raw) with ~500 chunks each produces rou
 - 5 GB Markdown in MinIO
 - ~8 GB in Qdrant (5 M vectors)
 - ~10 MB in MongoDB
+
+## Performance
+
+The pipeline includes several optimizations to maximize throughput and minimize latency:
+
+**Workers (converter + chunker):**
+- Sync operations (Docling conversion, MinIO I/O, FastEmbed embedding) run in thread pools via `run_in_executor` to avoid blocking the async event loop
+- Stale Qdrant chunks are deleted before upserting on document reprocessing (version > 1)
+
+**Qdrant:**
+- Known collections are cached in-memory to skip redundant `get_collections` RPCs
+- Large upserts are batched in chunks of 100 points
+
+**MongoDB:**
+- Aggregation-based `GET /v1/documents/stats` endpoint for efficient dashboard stats (replaces client-side filtering of full document lists)
+- Compound index on `(tenant_id, content_type)` for filtered queries
+
+**Rate limiter:**
+- Lua script registered once at init (`register_script` / `EVALSHA`) instead of sending the full script on every request
+
+**API:**
+- Health check runs all 4 service checks concurrently with `asyncio.gather`; sync MinIO call wrapped in executor
+- Batch URL ingestion processes URLs concurrently with `asyncio.gather`
+- Search endpoint runs sync `embed_query` in thread pool
+
+**Folder watcher:**
+- Reuses a single `httpx.AsyncClient` across poll cycles instead of creating/destroying one per file
+
+**Frontend:**
+- Dashboard `StatsPanel` uses the new `/documents/stats` aggregation endpoint instead of fetching up to 200 documents and filtering in JS
+- `refetchOnWindowFocus` disabled to reduce unnecessary API calls
 
 ## Local Development
 
