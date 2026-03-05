@@ -5,6 +5,7 @@ runs the two-pass chunker, embeds chunks via FastEmbed, and upserts vectors
 to Qdrant.
 """
 
+import asyncio
 import time
 import uuid
 from datetime import UTC, datetime
@@ -16,15 +17,13 @@ from docingest.logging_config import configure_logging
 
 configure_logging()
 
-import asyncio
-
 from docingest.db.blob import download_blob, get_blob_client
 from docingest.db.mongodb import get_db, get_document, update_document_status
-from docingest.db.qdrant import ensure_collection, get_qdrant, upsert_chunks
+from docingest.db.qdrant import delete_doc_chunks, ensure_collection, get_qdrant, upsert_chunks
 from docingest.db.redis import get_redis_settings
 from docingest.models.document import DocumentStatus
-from docingest.services.chunking import chunk_document
 from docingest.services.app_logger import log_event
+from docingest.services.chunking import chunk_document
 from docingest.services.embedding import embed_texts
 
 log = structlog.get_logger()
@@ -64,7 +63,10 @@ async def chunk_and_embed(ctx: dict, doc_id: str, tenant_id: str, trace_id: str 
         # Stage: download markdown
         try:
             t0 = time.monotonic()
-            markdown_bytes = download_blob(blob_client, tenant_id, doc["markdown_blob_path"])
+            loop = asyncio.get_running_loop()
+            markdown_bytes = await loop.run_in_executor(
+                None, download_blob, blob_client, tenant_id, doc["markdown_blob_path"]
+            )
             markdown = markdown_bytes.decode("utf-8")
             download_ms = round((time.monotonic() - t0) * 1000, 1)
         except Exception as e:
@@ -124,7 +126,8 @@ async def chunk_and_embed(ctx: dict, doc_id: str, tenant_id: str, trace_id: str 
         try:
             t0 = time.monotonic()
             texts = [c["chunk_text"] for c in chunks]
-            vectors = embed_texts(texts)
+            loop = asyncio.get_running_loop()
+            vectors = await loop.run_in_executor(None, embed_texts, texts)
             embed_ms = round((time.monotonic() - t0) * 1000, 1)
         except Exception as e:
             log.error(
@@ -148,6 +151,11 @@ async def chunk_and_embed(ctx: dict, doc_id: str, tenant_id: str, trace_id: str 
         try:
             t0 = time.monotonic()
             await ensure_collection(qdrant, tenant_id)
+
+            # Remove stale chunks from prior versions before upserting
+            if doc.get("version", 1) > 1:
+                await delete_doc_chunks(qdrant, tenant_id, doc_id)
+
             now = datetime.now(UTC).isoformat()
 
             points = [
@@ -167,7 +175,7 @@ async def chunk_and_embed(ctx: dict, doc_id: str, tenant_id: str, trace_id: str 
                         "created_at": now,
                     },
                 )
-                for chunk, vector in zip(chunks, vectors)
+                for chunk, vector in zip(chunks, vectors, strict=True)
             ]
 
             await upsert_chunks(qdrant, tenant_id, points)

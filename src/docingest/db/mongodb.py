@@ -30,6 +30,7 @@ async def close_db() -> None:
 async def ensure_indexes(db: AsyncIOMotorDatabase) -> None:
     await db.documents.create_index([("tenant_id", 1), ("source_hash", 1)])
     await db.documents.create_index([("tenant_id", 1), ("status", 1)])
+    await db.documents.create_index([("tenant_id", 1), ("content_type", 1)])
     await db.documents.create_index([("tenant_id", 1), ("created_at", -1)])
     await db.api_keys.create_index("key_hash", unique=True)
     await db.api_keys.create_index("tenant_id")
@@ -108,6 +109,21 @@ async def increment_version(db: AsyncIOMotorDatabase, doc_id: str) -> None:
         {"_id": ObjectId(doc_id)},
         {"$inc": {"version": 1}, "$set": {"status": "pending", "updated_at": datetime.now(UTC)}},
     )
+
+
+async def get_document_stats(db: AsyncIOMotorDatabase, tenant_id: str) -> dict[str, int]:
+    """Aggregate document counts by status for a tenant using MongoDB aggregation."""
+    pipeline = [
+        {"$match": {"tenant_id": tenant_id}},
+        {"$group": {"_id": "$status", "count": {"$sum": 1}}},
+    ]
+    counts: dict[str, int] = {}
+    total = 0
+    async for doc in db.documents.aggregate(pipeline):
+        counts[doc["_id"]] = doc["count"]
+        total += doc["count"]
+    counts["total"] = total
+    return counts
 
 
 # --- API key operations ---

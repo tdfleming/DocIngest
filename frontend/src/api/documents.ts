@@ -81,3 +81,8 @@ export async function getDocumentMarkdown(docId: string): Promise<string> {
   const { data } = await client.get<string>(`/documents/${docId}/markdown`);
   return data;
 }
+
+export async function getDocumentStats(): Promise<Record<string, number>> {
+  const { data } = await client.get<Record<string, number>>("/documents/stats");
+  return data;
+}

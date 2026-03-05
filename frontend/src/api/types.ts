@@ -110,7 +110,7 @@ export interface SearchRequest {
 
 export interface SearchResult {
   chunk_text: string;
-  score: float;
+  score: number;
   doc_id: string;
   source_ref: string;
   content_type: string;
@@ -214,6 +214,3 @@ export interface UpdateApiKeyRequest {
   rate_limit?: number;
   enabled?: boolean;
 }
-
-// Utility
-type float = number;

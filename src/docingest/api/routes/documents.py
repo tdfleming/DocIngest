@@ -1,12 +1,10 @@
 import hashlib
 import uuid
-from typing import Annotated
 
 import structlog
 from fastapi import APIRouter, File, HTTPException, Query, Request, UploadFile
-from pydantic import BaseModel, Field, HttpUrl
-
 from fastapi.responses import PlainTextResponse
+from pydantic import BaseModel, Field, HttpUrl
 
 from docingest.api.auth import Tenant
 from docingest.db.blob import delete_blob, download_blob, get_blob_client, upload_blob
@@ -15,10 +13,10 @@ from docingest.db.mongodb import (
     find_by_hash,
     get_db,
     get_document,
+    get_document_stats,
     increment_version,
     insert_document,
     list_documents,
-    update_document_status,
 )
 from docingest.db.qdrant import delete_doc_chunks, get_qdrant
 from docingest.db.redis import get_redis_pool
@@ -104,7 +102,13 @@ class DocumentListResponse(BaseModel):
 
 async def _enqueue_conversion(doc_id: str, tenant_id: str, trace_id: str) -> None:
     pool = await get_redis_pool()
-    await pool.enqueue_job("convert_document", doc_id=doc_id, tenant_id=tenant_id, trace_id=trace_id, _queue_name="arq:queue:convert")
+    await pool.enqueue_job(
+        "convert_document",
+        doc_id=doc_id,
+        tenant_id=tenant_id,
+        trace_id=trace_id,
+        _queue_name="arq:queue:convert",
+    )
 
 
 def _doc_to_response(doc: dict) -> DocumentResponse:
@@ -264,17 +268,19 @@ async def ingest_from_url(request: Request, tenant: Tenant, body: UrlIngestReque
 
 @router.post("/documents/batch", status_code=202)
 async def batch_ingest(request: Request, tenant: Tenant, body: BatchUrlRequest):
-    results = []
-    for url in body.urls:
+    import asyncio
+
+    async def _ingest_one(url):
         try:
             result = await ingest_from_url(
                 request, tenant, UrlIngestRequest(url=url, force=body.force)
             )
-            results.append({"url": str(url), **result})
+            return {"url": str(url), **result}
         except Exception as e:
-            results.append({"url": str(url), "status": "error", "error": str(e)})
+            return {"url": str(url), "status": "error", "error": str(e)}
 
-    return {"results": results}
+    results = await asyncio.gather(*[_ingest_one(url) for url in body.urls])
+    return {"results": list(results)}
 
 
 @router.get("/documents/{doc_id}")
@@ -284,6 +290,13 @@ async def get_document_detail(tenant: Tenant, doc_id: str):
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
     return _doc_to_response(doc)
+
+
+@router.get("/documents/stats")
+async def document_stats(tenant: Tenant):
+    """Aggregated document counts by status (efficient for dashboards)."""
+    db = await get_db()
+    return await get_document_stats(db, tenant["tenant_id"])
 
 
 @router.get("/documents")

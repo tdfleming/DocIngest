@@ -1,4 +1,4 @@
-from arq.connections import ArqRedis, create_pool, RedisSettings
+from arq.connections import ArqRedis, RedisSettings, create_pool
 
 from docingest.config import settings
 

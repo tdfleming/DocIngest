@@ -9,20 +9,26 @@ import {
   StatNumber,
   VStack,
 } from "@chakra-ui/react";
-import { useDocuments } from "../../hooks/useDocuments";
+import { useQuery } from "@tanstack/react-query";
+import { getDocumentStats } from "../../api/documents";
 
 export default function StatsPanel() {
-  const { data, isLoading } = useDocuments({ per_page: 200 });
+  const { data: counts, isLoading } = useQuery({
+    queryKey: ["documentStats"],
+    queryFn: getDocumentStats,
+    refetchInterval: 10_000,
+  });
 
   if (isLoading) return <Spinner />;
 
-  const docs = data?.documents ?? [];
-  const total = data?.total ?? 0;
-  const pending = docs.filter(
-    (d) => d.status === "pending" || d.status === "converting" || d.status === "converted" || d.status === "chunking"
-  ).length;
-  const complete = docs.filter((d) => d.status === "complete").length;
-  const failed = docs.filter((d) => d.status === "failed").length;
+  const total = counts?.total ?? 0;
+  const pending =
+    (counts?.pending ?? 0) +
+    (counts?.converting ?? 0) +
+    (counts?.converted ?? 0) +
+    (counts?.chunking ?? 0);
+  const complete = counts?.complete ?? 0;
+  const failed = counts?.failed ?? 0;
 
   const stats = [
     { label: "Total Documents", value: total, color: "blue" },

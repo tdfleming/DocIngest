@@ -18,22 +18,23 @@ log = structlog.get_logger()
 SUPPORTED_EXTENSIONS = {".pdf", ".html", ".htm", ".docx"}
 
 
-async def _submit_file(file_path: Path, tenant_id: str, api_key: str) -> bool:
+async def _submit_file(
+    http_client: httpx.AsyncClient, file_path: Path, tenant_id: str, api_key: str
+) -> bool:
     """Submit a file to the ingestion API."""
     api_url = f"http://ingestion-api:{settings.api_port}/v1/documents"
 
     try:
-        async with httpx.AsyncClient(timeout=120) as client:
-            with open(file_path, "rb") as f:
-                response = await client.post(
-                    api_url,
-                    files={"file": (file_path.name, f)},
-                    headers={"X-API-Key": api_key},
-                )
-            response.raise_for_status()
-            result = response.json()
-            log.info("file submitted", file=file_path.name, tenant=tenant_id, result=result)
-            return True
+        with open(file_path, "rb") as f:
+            response = await http_client.post(
+                api_url,
+                files={"file": (file_path.name, f)},
+                headers={"X-API-Key": api_key},
+            )
+        response.raise_for_status()
+        result = response.json()
+        log.info("file submitted", file=file_path.name, tenant=tenant_id, result=result)
+        return True
     except Exception as e:
         log.error("file submission failed", file=file_path.name, error=str(e))
         return False
@@ -44,7 +45,9 @@ def _move_file(file_path: Path, dest_dir: Path) -> None:
     shutil.move(str(file_path), str(dest_dir / file_path.name))
 
 
-async def _process_tenant_folder(tenant_dir: Path, tenant_id: str, api_key: str) -> None:
+async def _process_tenant_folder(
+    http_client: httpx.AsyncClient, tenant_dir: Path, tenant_id: str, api_key: str
+) -> None:
     """Process all new files in a tenant's inbox folder."""
     processed_dir = tenant_dir / "processed"
     failed_dir = tenant_dir / "failed"
@@ -55,7 +58,7 @@ async def _process_tenant_folder(tenant_dir: Path, tenant_id: str, api_key: str)
         if file_path.suffix.lower() not in SUPPORTED_EXTENSIONS:
             continue
 
-        success = await _submit_file(file_path, tenant_id, api_key)
+        success = await _submit_file(http_client, file_path, tenant_id, api_key)
         if success:
             _move_file(file_path, processed_dir)
         else:
@@ -75,19 +78,22 @@ async def watch_loop(tenant_keys: dict[str, str]) -> None:
 
     log.info("folder watcher started", watch_root=str(watch_root), interval=interval)
 
-    while True:
-        for tenant_id, api_key in tenant_keys.items():
-            tenant_dir = watch_root / tenant_id
-            if not tenant_dir.exists():
-                tenant_dir.mkdir(parents=True, exist_ok=True)
-                continue
+    async with httpx.AsyncClient(timeout=120) as http_client:
+        while True:
+            for tenant_id, api_key in tenant_keys.items():
+                tenant_dir = watch_root / tenant_id
+                if not tenant_dir.exists():
+                    tenant_dir.mkdir(parents=True, exist_ok=True)
+                    continue
 
-            try:
-                await _process_tenant_folder(tenant_dir, tenant_id, api_key)
-            except Exception as e:
-                log.error("watch error", tenant=tenant_id, error=str(e))
+                try:
+                    await _process_tenant_folder(
+                        http_client, tenant_dir, tenant_id, api_key
+                    )
+                except Exception as e:
+                    log.error("watch error", tenant=tenant_id, error=str(e))
 
-        await asyncio.sleep(interval)
+            await asyncio.sleep(interval)
 
 
 def main() -> None:

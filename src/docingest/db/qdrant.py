@@ -32,10 +32,17 @@ async def close_qdrant() -> None:
         _client = None
 
 
+_known_collections: set[str] = set()
+
+
 async def ensure_collection(client: AsyncQdrantClient, tenant_id: str) -> None:
     name = _collection_name(tenant_id)
+    if name in _known_collections:
+        return
     collections = await client.get_collections()
-    if name not in [c.name for c in collections.collections]:
+    existing = {c.name for c in collections.collections}
+    _known_collections.update(existing)
+    if name not in existing:
         await client.create_collection(
             collection_name=name,
             vectors_config=VectorParams(
@@ -46,14 +53,21 @@ async def ensure_collection(client: AsyncQdrantClient, tenant_id: str) -> None:
             on_disk_payload=True,
             optimizers_config={"indexing_threshold": 20000},
         )
+        _known_collections.add(name)
 
 
 async def upsert_chunks(
     client: AsyncQdrantClient,
     tenant_id: str,
     points: list[PointStruct],
+    batch_size: int = 100,
 ) -> None:
-    await client.upsert(collection_name=_collection_name(tenant_id), points=points)
+    name = _collection_name(tenant_id)
+    if len(points) <= batch_size:
+        await client.upsert(collection_name=name, points=points)
+    else:
+        for i in range(0, len(points), batch_size):
+            await client.upsert(collection_name=name, points=points[i : i + batch_size])
 
 
 async def delete_doc_chunks(
@@ -101,3 +115,4 @@ async def delete_collection(client: AsyncQdrantClient, tenant_id: str) -> None:
     collections = await client.get_collections()
     if name in [c.name for c in collections.collections]:
         await client.delete_collection(name)
+    _known_collections.discard(name)

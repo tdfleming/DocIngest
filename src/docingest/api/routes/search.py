@@ -1,3 +1,4 @@
+import asyncio
 import time
 
 import structlog
@@ -45,7 +46,8 @@ class SearchResponse(BaseModel):
 async def semantic_search(tenant: Tenant, request: SearchRequest):
     start = time.monotonic()
 
-    query_vector, token_count = embed_query(request.query)
+    loop = asyncio.get_running_loop()
+    query_vector, token_count = await loop.run_in_executor(None, embed_query, request.query)
 
     # Retrieve more candidates when reranking
     retrieve_limit = request.limit * 3 if request.rerank else request.limit
