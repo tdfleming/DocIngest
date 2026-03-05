@@ -298,6 +298,13 @@ async def batch_ingest(request: Request, tenant: Tenant, body: BatchUrlRequest):
     return {"results": list(results)}
 
 
+@router.get("/documents/stats")
+async def document_stats(tenant: Tenant):
+    """Aggregated document counts by status (efficient for dashboards)."""
+    db = await get_db()
+    return await get_document_stats(db, tenant["tenant_id"])
+
+
 @router.get("/documents/{doc_id}")
 async def get_document_detail(tenant: Tenant, doc_id: str):
     db = await get_db()
@@ -305,13 +312,6 @@ async def get_document_detail(tenant: Tenant, doc_id: str):
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
     return _doc_to_response(doc)
-
-
-@router.get("/documents/stats")
-async def document_stats(tenant: Tenant):
-    """Aggregated document counts by status (efficient for dashboards)."""
-    db = await get_db()
-    return await get_document_stats(db, tenant["tenant_id"])
 
 
 @router.get("/documents")
