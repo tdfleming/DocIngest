@@ -1,3 +1,5 @@
+import threading
+
 import structlog
 from fastembed import TextEmbedding
 
@@ -6,15 +8,22 @@ from docingest.config import settings
 log = structlog.get_logger()
 
 _model: TextEmbedding | None = None
+_model_lock = threading.Lock()
 
 
 def _get_model() -> TextEmbedding:
-    """Lazy-init the FastEmbed model (downloads ~30MB on first use)."""
+    """Lazy-init the FastEmbed model (downloads ~30MB on first use).
+
+    Thread-safe: uses double-checked locking so that concurrent
+    ``run_in_executor`` calls don't race during initialization.
+    """
     global _model
     if _model is None:
-        log.info("loading fastembed model", model=settings.fastembed_model)
-        _model = TextEmbedding(model_name=settings.fastembed_model)
-        log.info("fastembed model loaded", model=settings.fastembed_model)
+        with _model_lock:
+            if _model is None:
+                log.info("loading fastembed model", model=settings.fastembed_model)
+                _model = TextEmbedding(model_name=settings.fastembed_model)
+                log.info("fastembed model loaded", model=settings.fastembed_model)
     return _model
 
 
