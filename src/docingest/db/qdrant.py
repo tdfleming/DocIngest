@@ -1,3 +1,5 @@
+import asyncio
+
 from qdrant_client import AsyncQdrantClient
 from qdrant_client.models import (
     Distance,
@@ -30,30 +32,36 @@ async def close_qdrant() -> None:
     if _client:
         await _client.close()
         _client = None
+    _known_collections.clear()
 
 
 _known_collections: set[str] = set()
+_collection_lock = asyncio.Lock()
 
 
 async def ensure_collection(client: AsyncQdrantClient, tenant_id: str) -> None:
     name = _collection_name(tenant_id)
     if name in _known_collections:
         return
-    collections = await client.get_collections()
-    existing = {c.name for c in collections.collections}
-    _known_collections.update(existing)
-    if name not in existing:
-        await client.create_collection(
-            collection_name=name,
-            vectors_config=VectorParams(
-                size=settings.embedding_dimensions,
-                distance=Distance.COSINE,
-                on_disk=True,
-            ),
-            on_disk_payload=True,
-            optimizers_config={"indexing_threshold": 20000},
-        )
-        _known_collections.add(name)
+    async with _collection_lock:
+        # Re-check after acquiring lock
+        if name in _known_collections:
+            return
+        collections = await client.get_collections()
+        existing = {c.name for c in collections.collections}
+        _known_collections.update(existing)
+        if name not in existing:
+            await client.create_collection(
+                collection_name=name,
+                vectors_config=VectorParams(
+                    size=settings.embedding_dimensions,
+                    distance=Distance.COSINE,
+                    on_disk=True,
+                ),
+                on_disk_payload=True,
+                optimizers_config={"indexing_threshold": 20000},
+            )
+            _known_collections.add(name)
 
 
 async def upsert_chunks(
