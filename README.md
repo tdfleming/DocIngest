@@ -253,6 +253,130 @@ src/docingest/
 └── watcher/            # Watched folder auto-ingestion
 ```
 
+## Deployment
+
+### Docker Compose (single server)
+
+The simplest deployment uses Docker Compose on a single machine:
+
+```bash
+# 1. Clone and configure
+git clone <repo-url> && cd DocIngest
+cp .env.example .env
+# Edit .env — at minimum change JWT_SECRET_KEY and MinIO credentials
+```
+
+**Production `.env` checklist:**
+
+| Variable | Action |
+|----------|--------|
+| `JWT_SECRET_KEY` | Set to a strong random secret (`openssl rand -hex 32`) |
+| `MINIO_ACCESS_KEY` / `MINIO_SECRET_KEY` | Change from defaults |
+| `DEFAULT_RATE_LIMIT` | Tune per your expected load |
+
+```bash
+# 2. Build and launch
+docker compose up --build -d
+
+# 3. Verify all services are healthy
+docker compose ps
+
+# 4. Create your first tenant API key
+docker compose exec ingestion-api python scripts/create_api_key.py my-tenant "My Tenant"
+```
+
+### Scaling workers
+
+Converter and chunker workers can be scaled independently to match your workload:
+
+```bash
+# Scale converter workers (CPU/GPU intensive — document conversion)
+docker compose up --scale converter-worker=4 -d
+
+# Scale chunker workers (lighter — embedding + vector upsert)
+docker compose up --scale chunker-worker=4 -d
+```
+
+Default is 2 replicas each. Scale converter workers based on document volume and available CPU/RAM (each needs ~2–4 GB). Scale chunker workers based on chunk throughput needs.
+
+### Reverse proxy
+
+In production, place a reverse proxy (Nginx, Caddy, Traefik) in front of the API and frontend:
+
+- Terminate TLS at the proxy
+- Forward `/v1/` to `ingestion-api:8000`
+- Forward `/` to `frontend:3000`
+- Set appropriate `proxy_read_timeout` values — document conversion can take minutes for large files
+
+Example Nginx snippet:
+
+```nginx
+server {
+    listen 443 ssl;
+    server_name docingest.example.com;
+
+    ssl_certificate     /etc/ssl/certs/docingest.pem;
+    ssl_certificate_key /etc/ssl/private/docingest.key;
+
+    client_max_body_size 100M;
+
+    location /v1/ {
+        proxy_pass http://ingestion-api:8000;
+        proxy_read_timeout 600s;
+    }
+
+    location / {
+        proxy_pass http://frontend:3000;
+    }
+}
+```
+
+### Data persistence
+
+All stateful services use named Docker volumes:
+
+| Volume | Service | Contains |
+|--------|---------|----------|
+| `mongo_data` | MongoDB | Document metadata, user accounts |
+| `qdrant_data` | Qdrant | Vector indexes and stored vectors |
+| `redis_data` | Redis | Job queue state (ephemeral) |
+| `minio_data` | MinIO | Raw uploaded files, converted Markdown |
+
+**Backup strategy:**
+- **MongoDB:** Use `mongodump` on a schedule — small dataset, fast to back up
+- **Qdrant:** Snapshot via the [Qdrant snapshot API](https://qdrant.tech/documentation/concepts/snapshots/) or back up the volume directly
+- **MinIO:** Use `mc mirror` to replicate to another S3-compatible target, or back up the volume
+- **Redis:** Mostly ephemeral job state; loss means in-flight jobs need re-enqueue but no data loss
+
+### Health monitoring
+
+The `GET /v1/health` endpoint checks connectivity to all four backing services (MongoDB, Qdrant, Redis, MinIO) concurrently and returns per-service status. Use it as a liveness/readiness probe:
+
+```bash
+curl http://localhost:8000/v1/health
+```
+
+### GPU-accelerated deployment
+
+For high-volume ingestion, enable GPU acceleration on converter workers:
+
+1. Install `nvidia-container-toolkit` on the host
+2. Set `USE_DOCLING_GPU=true` in `.env`
+3. Add GPU resource reservations to the converter service in `docker-compose.yml`:
+
+```yaml
+converter-worker:
+  deploy:
+    resources:
+      reservations:
+        devices:
+          - driver: nvidia
+            count: 1
+            capabilities: [gpu]
+```
+
+See the [Hardware Requirements](#hardware-requirements) section for GPU sizing guidance.
+
 ## License
 
 Proprietary.
