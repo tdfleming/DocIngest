@@ -1,6 +1,8 @@
 import asyncio
 
+import structlog
 from qdrant_client import AsyncQdrantClient
+from qdrant_client.http.exceptions import UnexpectedResponse
 from qdrant_client.models import (
     Distance,
     FieldCondition,
@@ -12,6 +14,8 @@ from qdrant_client.models import (
 )
 
 from docingest.config import settings
+
+logger = structlog.get_logger()
 
 _client: AsyncQdrantClient | None = None
 
@@ -51,16 +55,28 @@ async def ensure_collection(client: AsyncQdrantClient, tenant_id: str) -> None:
         existing = {c.name for c in collections.collections}
         _known_collections.update(existing)
         if name not in existing:
-            await client.create_collection(
-                collection_name=name,
-                vectors_config=VectorParams(
-                    size=settings.embedding_dimensions,
-                    distance=Distance.COSINE,
-                    on_disk=True,
-                ),
-                on_disk_payload=True,
-                optimizers_config={"indexing_threshold": 20000},
-            )
+            try:
+                await client.create_collection(
+                    collection_name=name,
+                    vectors_config=VectorParams(
+                        size=settings.embedding_dimensions,
+                        distance=Distance.COSINE,
+                        on_disk=True,
+                    ),
+                    on_disk_payload=True,
+                    optimizers_config={"indexing_threshold": 20000},
+                )
+            except UnexpectedResponse as exc:
+                if exc.status_code == 409 or (
+                    exc.content and b"already exists" in exc.content
+                ):
+                    logger.info(
+                        "collection_already_exists",
+                        collection=name,
+                        msg="created by another replica; treating as success",
+                    )
+                else:
+                    raise
             _known_collections.add(name)
 
 
