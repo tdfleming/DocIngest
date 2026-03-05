@@ -1,4 +1,5 @@
 import tempfile
+import threading
 from pathlib import Path
 
 import structlog
@@ -10,31 +11,44 @@ log = structlog.get_logger()
 
 _converter: DocumentConverter | None = None
 _ocr_converter: DocumentConverter | None = None
+_converter_lock = threading.Lock()
 
 
 def _get_converter() -> DocumentConverter:
-    """Standard converter with default OCR (bitmap-region only)."""
+    """Standard converter with default OCR (bitmap-region only).
+
+    Thread-safe via double-checked locking.
+    """
     global _converter
     if _converter is None:
-        _converter = DocumentConverter()
+        with _converter_lock:
+            if _converter is None:
+                _converter = DocumentConverter()
     return _converter
 
 
 def _get_ocr_converter() -> DocumentConverter:
-    """Converter with force_full_page_ocr for image-heavy documents."""
+    """Converter with force_full_page_ocr for image-heavy documents.
+
+    Thread-safe via double-checked locking.
+    """
     global _ocr_converter
     if _ocr_converter is None:
-        pipeline_options = PdfPipelineOptions(
-            do_ocr=True,
-            ocr_options=PdfPipelineOptions().ocr_options.model_copy(
-                update={"force_full_page_ocr": True}
-            ),
-        )
-        _ocr_converter = DocumentConverter(
-            format_options={
-                InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_options),
-            }
-        )
+        with _converter_lock:
+            if _ocr_converter is None:
+                pipeline_options = PdfPipelineOptions(
+                    do_ocr=True,
+                    ocr_options=PdfPipelineOptions().ocr_options.model_copy(
+                        update={"force_full_page_ocr": True}
+                    ),
+                )
+                _ocr_converter = DocumentConverter(
+                    format_options={
+                        InputFormat.PDF: PdfFormatOption(
+                            pipeline_options=pipeline_options
+                        ),
+                    }
+                )
     return _ocr_converter
 
 
@@ -77,7 +91,8 @@ def convert_to_markdown(raw_bytes: bytes, content_type: str, source_ref: str) ->
 
     try:
         converter = _get_converter()
-        result = converter.convert(tmp_path)
+        with _converter_lock:
+            result = converter.convert(tmp_path)
         markdown = result.document.export_to_markdown()
 
         # Retry with full-page OCR if first pass produced no text (image-heavy PDF)
@@ -87,7 +102,8 @@ def convert_to_markdown(raw_bytes: bytes, content_type: str, source_ref: str) ->
                 source_ref=source_ref,
             )
             ocr_converter = _get_ocr_converter()
-            result = ocr_converter.convert(tmp_path)
+            with _converter_lock:
+                result = ocr_converter.convert(tmp_path)
             markdown = result.document.export_to_markdown()
 
         log.info(
