@@ -17,14 +17,19 @@ from docingest.logging_config import configure_logging
 
 configure_logging()
 
-from docingest.db.blob import download_blob, get_blob_client
-from docingest.db.mongodb import get_db, get_document, update_document_status
-from docingest.db.qdrant import delete_doc_chunks, ensure_collection, get_qdrant, upsert_chunks
-from docingest.db.redis import get_redis_settings
-from docingest.models.document import DocumentStatus
-from docingest.services.app_logger import log_event
-from docingest.services.chunking import chunk_document
-from docingest.services.embedding import embed_texts
+from docingest.db.blob import download_blob, get_blob_client  # noqa: E402
+from docingest.db.mongodb import get_db, get_document, update_document_status  # noqa: E402
+from docingest.db.qdrant import (  # noqa: E402
+    delete_doc_chunks,
+    ensure_collection,
+    get_qdrant,
+    upsert_chunks,
+)
+from docingest.db.redis import get_redis_settings  # noqa: E402
+from docingest.models.document import DocumentStatus  # noqa: E402
+from docingest.services.app_logger import log_event  # noqa: E402
+from docingest.services.chunking import chunk_document  # noqa: E402
+from docingest.services.embedding import embed_texts  # noqa: E402
 
 log = structlog.get_logger()
 

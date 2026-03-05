@@ -49,7 +49,7 @@ def create_access_token(user_id: str, username: str, role: str) -> str:
 
 
 async def resolve_user(
-    credentials: HTTPAuthorizationCredentials | None = Security(_bearer_scheme),
+    credentials: HTTPAuthorizationCredentials | None = Security(_bearer_scheme),  # noqa: B008
 ) -> dict:
     """Validate JWT Bearer token and return user dict."""
     if credentials is None:
@@ -61,9 +61,9 @@ async def resolve_user(
             algorithms=[settings.jwt_algorithm],
         )
     except jwt.ExpiredSignatureError:
-        raise HTTPException(status_code=401, detail="Token expired")
+        raise HTTPException(status_code=401, detail="Token expired") from None
     except jwt.InvalidTokenError:
-        raise HTTPException(status_code=401, detail="Invalid token")
+        raise HTTPException(status_code=401, detail="Invalid token") from None
 
     return {
         "user_id": payload["sub"],
@@ -72,7 +72,7 @@ async def resolve_user(
     }
 
 
-async def require_admin(user: dict = Depends(resolve_user)) -> dict:
+async def require_admin(user: dict = Depends(resolve_user)) -> dict:  # noqa: B008
     """Wrap resolve_user, checks role=admin."""
     if user["role"] != UserRole.ADMIN:
         raise HTTPException(status_code=403, detail="Admin access required")

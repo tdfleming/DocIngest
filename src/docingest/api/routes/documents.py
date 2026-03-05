@@ -1,4 +1,5 @@
 import asyncio
+import contextlib
 import hashlib
 import uuid
 
@@ -139,14 +140,16 @@ def _doc_to_response(doc: dict) -> DocumentResponse:
 async def upload_document(
     request: Request,
     tenant: Tenant,
-    file: UploadFile = File(...),
+    file: UploadFile = File(...),  # noqa: B008
     force: bool = Query(False),
     chunk_size: int | None = Query(None, ge=100, le=2000, description="Max tokens per chunk"),
     chunk_overlap: int | None = Query(None, ge=0, le=50, description="Overlap percentage"),
     chunking_strategy: str | None = Query(None, description="Chunking strategy: 'fixed'"),
 ):
     if chunking_strategy is not None and chunking_strategy != "fixed":
-        raise HTTPException(status_code=400, detail=f"Unsupported chunking strategy: {chunking_strategy}")
+        raise HTTPException(
+            status_code=400, detail=f"Unsupported chunking strategy: {chunking_strategy}"
+        )
 
     content_type = _detect_content_type(file.filename or "unknown", file.content_type)
     raw_bytes = await file.read()
@@ -351,15 +354,11 @@ async def delete_document_route(tenant: Tenant, doc_id: str):
     # Delete blobs
     blob_client = get_blob_client()
     if doc.get("blob_path"):
-        try:
+        with contextlib.suppress(Exception):
             delete_blob(blob_client, tenant["tenant_id"], doc["blob_path"])
-        except Exception:
-            pass
     if doc.get("markdown_blob_path"):
-        try:
+        with contextlib.suppress(Exception):
             delete_blob(blob_client, tenant["tenant_id"], doc["markdown_blob_path"])
-        except Exception:
-            pass
 
     await delete_document(db, doc_id, tenant["tenant_id"])
     log.info("document deleted", doc_id=doc_id)
@@ -410,6 +409,6 @@ async def get_document_markdown(tenant: Tenant, doc_id: str):
     try:
         md_bytes = download_blob(blob_client, tenant["tenant_id"], md_blob_path)
     except Exception:
-        raise HTTPException(status_code=404, detail="Markdown file not found in storage")
+        raise HTTPException(status_code=404, detail="Markdown file not found in storage") from None
 
     return PlainTextResponse(md_bytes.decode("utf-8"), media_type="text/markdown")

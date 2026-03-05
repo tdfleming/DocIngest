@@ -127,7 +127,9 @@ def chunk_document(
         {chunk_text, heading_chain, chunk_index, char_offset, token_count}
     """
     _max_tokens = max_tokens if max_tokens is not None else settings.chunk_max_tokens
-    _overlap_pct = overlap_percent if overlap_percent is not None else settings.chunk_overlap_percent
+    _overlap_pct = (
+        overlap_percent if overlap_percent is not None else settings.chunk_overlap_percent
+    )
 
     sections = _split_by_headings(markdown)
 
