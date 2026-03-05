@@ -210,6 +210,6 @@ class WorkerSettings:
     redis_settings = get_redis_settings()
     queue_name = "arq:queue:convert"
     max_jobs = 4
-    job_timeout = 600  # 10 min — Docling can be slow on large PDFs
+    job_timeout = 1800  # 30 min — Docling can be very slow on large PDFs with CPU
     max_tries = 3
     retry_delay = 30
