@@ -12,6 +12,7 @@ from docingest.config import settings
 log = structlog.get_logger()
 
 _redis: Redis | None = None
+_rate_limit_script = None
 
 # Lua script for atomic token bucket rate limiting.
 # Uses a Redis hash with 'tokens' and 'last_refill' fields.
@@ -72,13 +73,14 @@ class RateLimitResult:
 
 async def init_rate_limiter() -> None:
     """Create the Redis connection for rate limiting."""
-    global _redis
+    global _redis, _rate_limit_script
     if _redis is not None:
         return
     parsed = urlparse(settings.redis_url)
     host = parsed.hostname or "redis"
     port = parsed.port or 6379
     _redis = Redis(host=host, port=port, decode_responses=True)
+    _rate_limit_script = _redis.register_script(_TOKEN_BUCKET_SCRIPT)
     log.info("rate_limiter.init", host=host, port=port)
 
 
@@ -110,14 +112,20 @@ async def check_rate_limit(key_hash: str, limit: int) -> RateLimitResult:
         key = f"rate_limit:{key_hash}"
         ttl = 120  # 2x the 60s window
 
-        result = await _redis.eval(
-            _TOKEN_BUCKET_SCRIPT,
-            1,
-            key,
-            str(limit),
-            str(now),
-            str(ttl),
-        )
+        if _rate_limit_script is not None:
+            result = await _rate_limit_script(
+                keys=[key],
+                args=[str(limit), str(now), str(ttl)],
+            )
+        else:
+            result = await _redis.eval(
+                _TOKEN_BUCKET_SCRIPT,
+                1,
+                key,
+                str(limit),
+                str(now),
+                str(ttl),
+            )
 
         allowed, remaining, reset_seconds = result
         return RateLimitResult(

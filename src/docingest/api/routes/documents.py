@@ -1,12 +1,12 @@
+import asyncio
 import hashlib
 import uuid
-from typing import Annotated
 
+import httpx
 import structlog
 from fastapi import APIRouter, File, HTTPException, Query, Request, UploadFile
-from pydantic import BaseModel, Field, HttpUrl
-
 from fastapi.responses import PlainTextResponse
+from pydantic import BaseModel, Field, HttpUrl
 
 from docingest.api.auth import Tenant
 from docingest.db.blob import delete_blob, download_blob, get_blob_client, upload_blob
@@ -15,10 +15,10 @@ from docingest.db.mongodb import (
     find_by_hash,
     get_db,
     get_document,
+    get_document_stats,
     increment_version,
     insert_document,
     list_documents,
-    update_document_status,
 )
 from docingest.db.qdrant import delete_doc_chunks, get_qdrant
 from docingest.db.redis import get_redis_pool
@@ -67,7 +67,7 @@ class UrlIngestRequest(BaseModel):
 
 
 class BatchUrlRequest(BaseModel):
-    urls: list[HttpUrl]
+    urls: list[HttpUrl] = Field(..., min_length=1, max_length=50)
     force: bool = False
 
 
@@ -104,7 +104,13 @@ class DocumentListResponse(BaseModel):
 
 async def _enqueue_conversion(doc_id: str, tenant_id: str, trace_id: str) -> None:
     pool = await get_redis_pool()
-    await pool.enqueue_job("convert_document", doc_id=doc_id, tenant_id=tenant_id, trace_id=trace_id, _queue_name="arq:queue:convert")
+    await pool.enqueue_job(
+        "convert_document",
+        doc_id=doc_id,
+        tenant_id=tenant_id,
+        trace_id=trace_id,
+        _queue_name="arq:queue:convert",
+    )
 
 
 def _doc_to_response(doc: dict) -> DocumentResponse:
@@ -193,19 +199,21 @@ async def upload_document(
     return {"id": doc_id, "status": "pending"}
 
 
-@router.post("/documents/url", status_code=202)
-async def ingest_from_url(request: Request, tenant: Tenant, body: UrlIngestRequest):
+async def _ingest_url_core(
+    request: Request,
+    tenant: Tenant,
+    body: UrlIngestRequest,
+    http_client: httpx.AsyncClient,
+) -> dict:
+    """Shared URL ingestion logic used by both single and batch endpoints."""
     if body.chunking_strategy is not None and body.chunking_strategy != "fixed":
         raise HTTPException(
             status_code=400,
             detail=f"Unsupported chunking strategy: {body.chunking_strategy}",
         )
 
-    import httpx
-
-    async with httpx.AsyncClient(follow_redirects=True, timeout=60) as client:
-        resp = await client.get(str(body.url))
-        resp.raise_for_status()
+    resp = await http_client.get(str(body.url))
+    resp.raise_for_status()
 
     raw_bytes = resp.content
     file_size = len(raw_bytes)
@@ -262,19 +270,39 @@ async def ingest_from_url(request: Request, tenant: Tenant, body: UrlIngestReque
     return {"id": doc_id, "status": "pending"}
 
 
+@router.post("/documents/url", status_code=202)
+async def ingest_from_url(request: Request, tenant: Tenant, body: UrlIngestRequest):
+    async with httpx.AsyncClient(follow_redirects=True, timeout=60) as client:
+        return await _ingest_url_core(request, tenant, body, client)
+
+
+_BATCH_CONCURRENCY = 10
+
+
 @router.post("/documents/batch", status_code=202)
 async def batch_ingest(request: Request, tenant: Tenant, body: BatchUrlRequest):
-    results = []
-    for url in body.urls:
-        try:
-            result = await ingest_from_url(
-                request, tenant, UrlIngestRequest(url=url, force=body.force)
-            )
-            results.append({"url": str(url), **result})
-        except Exception as e:
-            results.append({"url": str(url), "status": "error", "error": str(e)})
+    semaphore = asyncio.Semaphore(_BATCH_CONCURRENCY)
 
-    return {"results": results}
+    async def _ingest_one(http_client: httpx.AsyncClient, url: HttpUrl) -> dict:
+        async with semaphore:
+            try:
+                result = await _ingest_url_core(
+                    request, tenant, UrlIngestRequest(url=url, force=body.force), http_client
+                )
+                return {"url": str(url), **result}
+            except Exception as e:
+                return {"url": str(url), "status": "error", "error": str(e)}
+
+    async with httpx.AsyncClient(follow_redirects=True, timeout=60) as client:
+        results = await asyncio.gather(*[_ingest_one(client, url) for url in body.urls])
+    return {"results": list(results)}
+
+
+@router.get("/documents/stats")
+async def document_stats(tenant: Tenant):
+    """Aggregated document counts by status (efficient for dashboards)."""
+    db = await get_db()
+    return await get_document_stats(db, tenant["tenant_id"])
 
 
 @router.get("/documents/{doc_id}")

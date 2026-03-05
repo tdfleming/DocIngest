@@ -5,6 +5,7 @@ converts to Markdown via Docling, uploads Markdown back to MinIO, and enqueues
 the chunking job.
 """
 
+import asyncio
 import time
 
 import structlog
@@ -13,10 +14,8 @@ from docingest.logging_config import configure_logging
 
 configure_logging()
 
-import asyncio
-
 from docingest.db.blob import download_blob, get_blob_client, upload_blob
-from docingest.db.mongodb import get_db, update_document_status
+from docingest.db.mongodb import get_db, get_document, update_document_status
 from docingest.db.redis import get_redis_pool, get_redis_settings
 from docingest.models.document import DocumentStatus
 from docingest.services.app_logger import log_event
@@ -40,9 +39,7 @@ async def convert_document(ctx: dict, doc_id: str, tenant_id: str, trace_id: str
         )
 
         # Stage: fetch document record
-        from bson import ObjectId
-
-        doc = await db.documents.find_one({"_id": ObjectId(doc_id)})
+        doc = await get_document(db, doc_id, tenant_id)
         if not doc:
             log.error("document not found", error_type="not_found")
             await update_document_status(
@@ -60,7 +57,10 @@ async def convert_document(ctx: dict, doc_id: str, tenant_id: str, trace_id: str
         # Stage: download raw file
         try:
             t0 = time.monotonic()
-            raw_bytes = download_blob(blob_client, tenant_id, doc["blob_path"])
+            loop = asyncio.get_running_loop()
+            raw_bytes = await loop.run_in_executor(
+                None, download_blob, blob_client, tenant_id, doc["blob_path"]
+            )
             download_ms = round((time.monotonic() - t0) * 1000, 1)
         except Exception as e:
             log.error(
@@ -83,7 +83,10 @@ async def convert_document(ctx: dict, doc_id: str, tenant_id: str, trace_id: str
         # Stage: convert to markdown
         try:
             t0 = time.monotonic()
-            markdown = convert_to_markdown(raw_bytes, doc["content_type"], doc["source_ref"])
+            loop = asyncio.get_running_loop()
+            markdown = await loop.run_in_executor(
+                None, convert_to_markdown, raw_bytes, doc["content_type"], doc["source_ref"]
+            )
             convert_ms = round((time.monotonic() - t0) * 1000, 1)
         except Exception as e:
             log.error(
@@ -107,8 +110,9 @@ async def convert_document(ctx: dict, doc_id: str, tenant_id: str, trace_id: str
         md_blob_path = f"markdown/{doc_id}.md"
         try:
             t0 = time.monotonic()
-            upload_blob(
-                blob_client, tenant_id, md_blob_path, markdown.encode("utf-8"), "text/markdown"
+            md_bytes = markdown.encode("utf-8")
+            await loop.run_in_executor(
+                None, upload_blob, blob_client, tenant_id, md_blob_path, md_bytes, "text/markdown"
             )
             upload_ms = round((time.monotonic() - t0) * 1000, 1)
         except Exception as e:
@@ -145,7 +149,13 @@ async def convert_document(ctx: dict, doc_id: str, tenant_id: str, trace_id: str
 
         # Enqueue chunking job
         pool = await get_redis_pool()
-        await pool.enqueue_job("chunk_and_embed", doc_id=doc_id, tenant_id=tenant_id, trace_id=trace_id, _queue_name="arq:queue:chunk")
+        await pool.enqueue_job(
+            "chunk_and_embed",
+            doc_id=doc_id,
+            tenant_id=tenant_id,
+            trace_id=trace_id,
+            _queue_name="arq:queue:chunk",
+        )
 
         asyncio.create_task(
             log_event(

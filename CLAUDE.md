@@ -152,10 +152,15 @@ ruff check --fix src/  # Auto-fix lint issues
 - **Error handling in workers**: Each pipeline stage has individual try/except blocks that set specific `error_type` and `error_stage` fields on the document record before returning.
 - **Multi-tenancy**: All data access is scoped by `tenant_id`. Qdrant uses per-tenant collections (`tenant_{id}`). MinIO paths are prefixed by tenant.
 - **Auth**: Two auth mechanisms — API key (`X-API-Key` header) for document/search endpoints, JWT Bearer token for user management endpoints. Use `Tenant` dependency for API-key-authenticated routes, `CurrentUser`/`AdminUser` for JWT routes.
+- **Thread-pool offloading**: Sync/blocking calls (Docling conversion, MinIO I/O, FastEmbed embedding) are wrapped in `loop.run_in_executor(None, ...)` to avoid blocking the async event loop. Apply this pattern to any new sync library calls in async code paths.
+- **Qdrant collection caching**: Known collection names are cached in a module-level `_known_collections` set to skip redundant `get_collections` RPCs. Update this set when creating or deleting collections.
+- **Batched Qdrant upserts**: Large point lists are upserted in batches of 100. Use the `batch_size` parameter of `upsert_chunks()`.
+- **Rate limiter Lua caching**: The token-bucket Lua script is registered once via `register_script()` at init and called via `EVALSHA`. Do not use raw `eval()` for rate limiting.
+- **Concurrent I/O**: Use `asyncio.gather` for independent async operations (e.g., health checks, batch URL ingestion). Prefer concurrent execution over sequential loops.
 
 ### Frontend
 - **Component library**: Chakra UI v2 with Emotion
-- **Data fetching**: TanStack Query (React Query v5) with Axios client
+- **Data fetching**: TanStack Query (React Query v5) with Axios client; `refetchOnWindowFocus` is disabled globally
 - **Routing**: React Router v6
 - **Build**: Vite with TypeScript (strict `--noEmit` check on build)
 
@@ -164,6 +169,7 @@ ruff check --fix src/  # Auto-fix lint issues
 - Routers are mounted in `api/app.py` with tag-based grouping
 - Error responses use `{"error": {"code": "...", "message": "...", "details": {}}}` format
 - Rate limiting enforced per API key via Redis token-bucket (fail-open)
+- `GET /v1/documents/stats` returns aggregated counts by status (used by dashboard instead of client-side filtering)
 
 ### Docker
 - Each service has its own Dockerfile in `docker/`
