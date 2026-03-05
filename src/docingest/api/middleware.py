@@ -32,8 +32,8 @@ class RateLimitHeaderMiddleware(BaseHTTPMiddleware):
 
 
 class RequestLoggingMiddleware(BaseHTTPMiddleware):
-    """Generates trace_id per request, logs method/path/status/duration, returns X-Trace-Id header."""
-
+    """Generates trace_id per request, logs method/path/status/duration,
+    returns X-Trace-Id header."""
     async def dispatch(
         self, request: Request, call_next: RequestResponseEndpoint
     ) -> Response:

@@ -14,12 +14,12 @@ from docingest.logging_config import configure_logging
 
 configure_logging()
 
-from docingest.db.blob import download_blob, get_blob_client, upload_blob
-from docingest.db.mongodb import get_db, get_document, update_document_status
-from docingest.db.redis import get_redis_pool, get_redis_settings
-from docingest.models.document import DocumentStatus
-from docingest.services.app_logger import log_event
-from docingest.services.conversion import convert_to_markdown, extract_metadata
+from docingest.db.blob import download_blob, get_blob_client, upload_blob  # noqa: E402
+from docingest.db.mongodb import get_db, get_document, update_document_status  # noqa: E402
+from docingest.db.redis import get_redis_pool, get_redis_settings  # noqa: E402
+from docingest.models.document import DocumentStatus  # noqa: E402
+from docingest.services.app_logger import log_event  # noqa: E402
+from docingest.services.conversion import convert_to_markdown, extract_metadata  # noqa: E402
 
 log = structlog.get_logger()
 
