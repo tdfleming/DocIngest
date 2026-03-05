@@ -1,6 +1,8 @@
+import asyncio
 import hashlib
 import uuid
 
+import httpx
 import structlog
 from fastapi import APIRouter, File, HTTPException, Query, Request, UploadFile
 from fastapi.responses import PlainTextResponse
@@ -65,7 +67,7 @@ class UrlIngestRequest(BaseModel):
 
 
 class BatchUrlRequest(BaseModel):
-    urls: list[HttpUrl]
+    urls: list[HttpUrl] = Field(..., min_length=1, max_length=50)
     force: bool = False
 
 
@@ -197,19 +199,21 @@ async def upload_document(
     return {"id": doc_id, "status": "pending"}
 
 
-@router.post("/documents/url", status_code=202)
-async def ingest_from_url(request: Request, tenant: Tenant, body: UrlIngestRequest):
+async def _ingest_url_core(
+    request: Request,
+    tenant: Tenant,
+    body: UrlIngestRequest,
+    http_client: httpx.AsyncClient,
+) -> dict:
+    """Shared URL ingestion logic used by both single and batch endpoints."""
     if body.chunking_strategy is not None and body.chunking_strategy != "fixed":
         raise HTTPException(
             status_code=400,
             detail=f"Unsupported chunking strategy: {body.chunking_strategy}",
         )
 
-    import httpx
-
-    async with httpx.AsyncClient(follow_redirects=True, timeout=60) as client:
-        resp = await client.get(str(body.url))
-        resp.raise_for_status()
+    resp = await http_client.get(str(body.url))
+    resp.raise_for_status()
 
     raw_bytes = resp.content
     file_size = len(raw_bytes)
@@ -266,20 +270,31 @@ async def ingest_from_url(request: Request, tenant: Tenant, body: UrlIngestReque
     return {"id": doc_id, "status": "pending"}
 
 
+@router.post("/documents/url", status_code=202)
+async def ingest_from_url(request: Request, tenant: Tenant, body: UrlIngestRequest):
+    async with httpx.AsyncClient(follow_redirects=True, timeout=60) as client:
+        return await _ingest_url_core(request, tenant, body, client)
+
+
+_BATCH_CONCURRENCY = 10
+
+
 @router.post("/documents/batch", status_code=202)
 async def batch_ingest(request: Request, tenant: Tenant, body: BatchUrlRequest):
-    import asyncio
+    semaphore = asyncio.Semaphore(_BATCH_CONCURRENCY)
 
-    async def _ingest_one(url):
-        try:
-            result = await ingest_from_url(
-                request, tenant, UrlIngestRequest(url=url, force=body.force)
-            )
-            return {"url": str(url), **result}
-        except Exception as e:
-            return {"url": str(url), "status": "error", "error": str(e)}
+    async def _ingest_one(http_client: httpx.AsyncClient, url: HttpUrl) -> dict:
+        async with semaphore:
+            try:
+                result = await _ingest_url_core(
+                    request, tenant, UrlIngestRequest(url=url, force=body.force), http_client
+                )
+                return {"url": str(url), **result}
+            except Exception as e:
+                return {"url": str(url), "status": "error", "error": str(e)}
 
-    results = await asyncio.gather(*[_ingest_one(url) for url in body.urls])
+    async with httpx.AsyncClient(follow_redirects=True, timeout=60) as client:
+        results = await asyncio.gather(*[_ingest_one(client, url) for url in body.urls])
     return {"results": list(results)}
 
 
