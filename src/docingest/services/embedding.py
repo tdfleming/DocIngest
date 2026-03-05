@@ -36,13 +36,16 @@ def embed_texts(texts: list[str]) -> list[list[float]]:
     """Embed a batch of texts via FastEmbed.
 
     Handles batching internally based on configured batch size.
+    Thread-safe: serializes inference via ``_model_lock`` so concurrent
+    ``run_in_executor`` calls don't hit the ONNX model simultaneously.
     """
     model = _get_model()
     all_embeddings: list[list[float]] = []
 
     for i in range(0, len(texts), settings.embedding_batch_size):
         batch = texts[i : i + settings.embedding_batch_size]
-        embeddings = list(model.embed(batch))
+        with _model_lock:
+            embeddings = list(model.embed(batch))
         all_embeddings.extend([e.tolist() for e in embeddings])
 
     log.info("embedded texts", count=len(texts))
@@ -56,6 +59,7 @@ def embed_query(query: str) -> tuple[list[float], int]:
     for asymmetric models like bge-small-en-v1.5.
     """
     model = _get_model()
-    embeddings = list(model.query_embed(query))
+    with _model_lock:
+        embeddings = list(model.query_embed(query))
     vector = embeddings[0].tolist()
     return vector, count_tokens(query)
