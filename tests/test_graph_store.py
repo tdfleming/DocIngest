@@ -3,7 +3,6 @@
 Requires MongoDB running at localhost:27017 (or MONGODB_URI env var).
 """
 
-import asyncio
 import os
 
 import pytest
