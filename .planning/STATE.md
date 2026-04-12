@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 11-01-PLAN.md
-last_updated: "2026-04-12T23:49:01Z"
-last_activity: 2026-04-12 — completed 11-01 community detection service
+stopped_at: Completed 11-02-PLAN.md
+last_updated: "2026-04-13T00:03:00Z"
+last_activity: 2026-04-12 — completed 11-02 community detection tests and API
 progress:
   total_phases: 10
   completed_phases: 8
@@ -26,9 +26,9 @@ See: .planning/PROJECT.md (updated 2026-03-04)
 ## Current Position
 
 Phase: 11 of 11
-Plan: 1 of 2 complete
-Status: Executing phase 11-community-detection
-Last activity: 2026-04-12 — completed 11-01 community detection service
+Plan: 2 of 2 complete
+Status: Phase 11 complete
+Last activity: 2026-04-12 — completed 11-02 community detection tests and API
 
 Progress: [██████████] 100%
 
@@ -58,8 +58,9 @@ Progress: [██████████] 100%
 | Phase 09 P01 | 5min | 2 tasks | 3 files |
 | 10-graph-builder-worker | 1/1 | Complete |
 | Phase 10 P01 | 4min | 3 tasks | 7 files |
-| 11-community-detection | 1/2 | In Progress |
+| 11-community-detection | 2/2 | Complete |
 | Phase 11 P01 | 4min | 2 tasks | 3 files |
+| Phase 11 P02 | 3min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -84,6 +85,9 @@ All v1 decisions documented in PROJECT.md Key Decisions table. All outcomes mark
 - [11-01] CPMVertexPartition for resolution-parameterized Leiden hierarchy
 - [11-01] Edge dedup by (min,max) pair with weight summing for undirected graph
 - [11-01] Parent/child linking by maximum entity overlap across adjacent levels
+- [11-02] All community detection test classes need igraph skipif guard due to module-level import
+- [11-02] Graph API returns 403 when graph_rag_enabled is false (authorization semantics)
+- [11-02] Conditional ensure_graph_indexes in lifespan gated by graph_rag_enabled
 
 ### Pending Todos
 
@@ -97,4 +101,4 @@ None.
 
 Last session: 2026-04-12T23:49:01Z
 Stopped at: Completed 11-01-PLAN.md
-Resume with: Execute 11-02-PLAN.md (community rebuild API route)
+Resume with: Phase 11 complete. All community detection plans executed.
