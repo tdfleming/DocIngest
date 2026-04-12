@@ -44,5 +44,11 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     jwt_access_token_expire_minutes: int = 480
 
+    # Graph RAG
+    graph_rag_enabled: bool = False
+    spacy_model: str = "en_core_web_lg"
+    entity_confidence_threshold: float = 0.7
+    max_entities_per_chunk: int = 50
+
 
 settings = Settings()
