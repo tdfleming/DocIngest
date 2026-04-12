@@ -107,6 +107,35 @@ async def delete_doc_chunks(
     )
 
 
+async def get_doc_chunks(
+    client: AsyncQdrantClient,
+    tenant_id: str,
+    doc_id: str,
+) -> list:
+    """Scroll through all chunks for a doc_id in a tenant collection."""
+    name = _collection_name(tenant_id)
+    all_points = []
+    offset = None
+
+    while True:
+        points, next_offset = await client.scroll(
+            collection_name=name,
+            scroll_filter=Filter(
+                must=[FieldCondition(key="doc_id", match=MatchValue(value=doc_id))]
+            ),
+            limit=100,
+            offset=offset,
+            with_payload=True,
+            with_vectors=False,
+        )
+        all_points.extend(points)
+        if next_offset is None:
+            break
+        offset = next_offset
+
+    return all_points
+
+
 async def search_chunks(
     client: AsyncQdrantClient,
     tenant_id: str,
