@@ -5,7 +5,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from docingest.api.middleware import RateLimitHeaderMiddleware, RequestLoggingMiddleware
-from docingest.api.routes import admin, auth, documents, health, search
+from docingest.api.routes import admin, auth, documents, graph, health, search
+from docingest.config import settings
 from docingest.db.blob import close_blob, ensure_bucket, get_blob_client
 from docingest.db.mongodb import close_db, ensure_indexes, get_db
 from docingest.db.qdrant import close_qdrant
@@ -26,6 +27,10 @@ async def lifespan(app: FastAPI):
     await ensure_indexes(db)
     blob_client = get_blob_client()
     ensure_bucket(blob_client)
+    if settings.graph_rag_enabled:
+        from docingest.db.graph_store import ensure_graph_indexes
+
+        await ensure_graph_indexes(db)
     yield
     log.info("shutting down")
     await close_rate_limiter()
@@ -57,3 +62,4 @@ app.include_router(documents.router, prefix="/v1", tags=["documents"])
 app.include_router(search.router, prefix="/v1", tags=["search"])
 app.include_router(auth.router, prefix="/v1", tags=["auth"])
 app.include_router(admin.router, prefix="/v1", tags=["admin"])
+app.include_router(graph.router, prefix="/v1", tags=["graph"])
