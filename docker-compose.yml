@@ -62,6 +62,22 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  graph-worker:
+    build:
+      context: .
+      dockerfile: docker/graph-worker.Dockerfile
+    env_file: .env
+    deploy:
+      replicas: 1
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      qdrant:
+        condition: service_healthy
+    restart: unless-stopped
+
   mongodb:
     image: mongo:7
     volumes:
