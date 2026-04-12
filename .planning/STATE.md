@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 08-02-PLAN.md
-last_updated: "2026-04-12T23:16:22Z"
-last_activity: 2026-04-12 — completed 08-02 graph store CRUD operations
+stopped_at: Completed 09-01-PLAN.md
+last_updated: "2026-04-12T23:31:12Z"
+last_activity: 2026-04-12 — completed 09-01 entity extraction service
 progress:
-  total_phases: 8
+  total_phases: 9
   completed_phases: 7
-  total_plans: 10
-  completed_plans: 10
-  percent: 95
+  total_plans: 11
+  completed_plans: 11
+  percent: 96
 ---
 
 # Project State
@@ -25,20 +25,20 @@ See: .planning/PROJECT.md (updated 2026-03-04)
 
 ## Current Position
 
-Phase: 8 of 8
-Plan: 2 of 3 complete
-Status: Executing phase 08-graph-data-models
-Last activity: 2026-04-12 — completed 08-02 graph store CRUD operations
+Phase: 9 of 9
+Plan: 1 of 1 complete
+Status: Executing phase 09-entity-extraction
+Last activity: 2026-04-12 — completed 09-01 entity extraction service
 
-Progress: [█████████░] 95%
+Progress: [█████████░] 96%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 10
-- Phases: 7
-- Timeline: 2 days (2026-03-03 → 2026-03-04)
+- Total plans completed: 11
+- Phases: 8
+- Timeline: 2026-03-03 → 2026-04-12
 
 **By Phase:**
 
@@ -54,6 +54,8 @@ Progress: [█████████░] 95%
 | 08-graph-data-models | 2/3 | In Progress |
 | Phase 08 P01 | 2min | 1 tasks | 3 files |
 | Phase 08 P02 | 6min | 2 tasks | 3 files |
+| 09-entity-extraction | 1/1 | Complete |
+| Phase 09 P01 | 5min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -67,6 +69,10 @@ All v1 decisions documented in PROJECT.md Key Decisions table. All outcomes mark
 - [08-02] Used two-step query for 1-hop neighbors, $graphLookup for multi-hop traversal
 - [08-02] Python-side cosine similarity with numpy for community search (no $vectorSearch on MongoDB 7)
 - [08-02] Conditional graph index creation gated by settings.graph_rag_enabled
+- [09-01] Followed embedding.py lazy-load + threading.Lock pattern for spaCy model singleton
+- [09-01] Filter out EntityType.OTHER entities by default to reduce graph noise
+- [09-01] SVO extraction requires BOTH source and target in entity list (strict filtering)
+- [09-01] Used stdlib difflib.SequenceMatcher for fuzzy matching (no extra dependency)
 
 ### Pending Todos
 
@@ -78,6 +84,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-12T23:16:22Z
-Stopped at: Completed 08-02-PLAN.md
-Resume with: Execute 08-03-PLAN.md next
+Last session: 2026-04-12T23:31:12Z
+Stopped at: Completed 09-01-PLAN.md
+Resume with: Next plan in phase 09 or next phase
