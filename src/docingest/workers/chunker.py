@@ -17,6 +17,7 @@ from docingest.logging_config import configure_logging
 
 configure_logging()
 
+from docingest.config import settings  # noqa: E402
 from docingest.db.blob import download_blob, get_blob_client  # noqa: E402
 from docingest.db.mongodb import get_db, get_document, update_document_status  # noqa: E402
 from docingest.db.qdrant import (  # noqa: E402
@@ -25,7 +26,7 @@ from docingest.db.qdrant import (  # noqa: E402
     get_qdrant,
     upsert_chunks,
 )
-from docingest.db.redis import get_redis_settings  # noqa: E402
+from docingest.db.redis import get_redis_pool, get_redis_settings  # noqa: E402
 from docingest.models.document import DocumentStatus  # noqa: E402
 from docingest.services.app_logger import log_event  # noqa: E402
 from docingest.services.chunking import chunk_document  # noqa: E402
@@ -212,6 +213,17 @@ async def chunk_and_embed(ctx: dict, doc_id: str, tenant_id: str, trace_id: str 
                 "processed_at": datetime.now(UTC),
             },
         )
+
+        # Enqueue graph building if enabled
+        if settings.graph_rag_enabled:
+            pool = await get_redis_pool()
+            await pool.enqueue_job(
+                "build_graph",
+                doc_id=doc_id,
+                tenant_id=tenant_id,
+                trace_id=trace_id,
+                _queue_name="arq:queue:graph",
+            )
 
         asyncio.create_task(
             log_event(
