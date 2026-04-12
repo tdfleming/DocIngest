@@ -26,6 +26,9 @@ dependencies = [
     # Local embeddings
     "fastembed>=0.4,<1",
 
+    # NLP
+    "spacy>=3.7,<4",
+
     # Utilities
     "pydantic>=2.10,<3",
     "pydantic-settings>=2.7,<3",
