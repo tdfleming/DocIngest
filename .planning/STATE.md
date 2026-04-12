@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 09-01-PLAN.md
-last_updated: "2026-04-12T23:31:12Z"
-last_activity: 2026-04-12 — completed 09-01 entity extraction service
+stopped_at: Completed 10-01-PLAN.md
+last_updated: "2026-04-12T23:39:26Z"
+last_activity: 2026-04-12 — completed 10-01 graph builder worker
 progress:
-  total_phases: 9
-  completed_phases: 7
-  total_plans: 11
-  completed_plans: 11
-  percent: 96
+  total_phases: 10
+  completed_phases: 8
+  total_plans: 12
+  completed_plans: 12
+  percent: 100
 ---
 
 # Project State
@@ -21,23 +21,23 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-04)
 
 **Core value:** Documents go in, searchable vectorized chunks come out — reliably and tenant-isolated.
-**Current focus:** Planning next milestone
+**Current focus:** Graph RAG pipeline complete
 
 ## Current Position
 
-Phase: 9 of 9
+Phase: 10 of 10
 Plan: 1 of 1 complete
-Status: Executing phase 09-entity-extraction
-Last activity: 2026-04-12 — completed 09-01 entity extraction service
+Status: Executing phase 10-graph-builder-worker
+Last activity: 2026-04-12 — completed 10-01 graph builder worker
 
-Progress: [█████████░] 96%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 11
-- Phases: 8
+- Total plans completed: 12
+- Phases: 9
 - Timeline: 2026-03-03 → 2026-04-12
 
 **By Phase:**
@@ -56,6 +56,8 @@ Progress: [█████████░] 96%
 | Phase 08 P02 | 6min | 2 tasks | 3 files |
 | 09-entity-extraction | 1/1 | Complete |
 | Phase 09 P01 | 5min | 2 tasks | 3 files |
+| 10-graph-builder-worker | 1/1 | Complete |
+| Phase 10 P01 | 4min | 3 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -73,6 +75,10 @@ All v1 decisions documented in PROJECT.md Key Decisions table. All outcomes mark
 - [09-01] Filter out EntityType.OTHER entities by default to reduce graph noise
 - [09-01] SVO extraction requires BOTH source and target in entity list (strict filtering)
 - [09-01] Used stdlib difflib.SequenceMatcher for fuzzy matching (no extra dependency)
+- [10-01] graph_status is a plain str|None, not a DocumentStatus enum, to avoid breaking frontend/API
+- [10-01] Batch entity resolution: single find_entities_by_names call, then local resolve_entity
+- [10-01] 1 replica for graph-worker due to ~500MB RAM per spaCy process
+- [10-01] graph-worker depends on mongodb/redis/qdrant only (no minio)
 
 ### Pending Todos
 
@@ -84,6 +90,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-12T23:31:12Z
-Stopped at: Completed 09-01-PLAN.md
-Resume with: Next plan in phase 09 or next phase
+Last session: 2026-04-12T23:39:26Z
+Stopped at: Completed 10-01-PLAN.md
+Resume with: Next phase or milestone planning
