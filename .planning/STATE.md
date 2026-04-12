@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 10-01-PLAN.md
-last_updated: "2026-04-12T23:39:26Z"
-last_activity: 2026-04-12 — completed 10-01 graph builder worker
+stopped_at: Completed 11-01-PLAN.md
+last_updated: "2026-04-12T23:49:01Z"
+last_activity: 2026-04-12 — completed 11-01 community detection service
 progress:
   total_phases: 10
   completed_phases: 8
@@ -25,10 +25,10 @@ See: .planning/PROJECT.md (updated 2026-03-04)
 
 ## Current Position
 
-Phase: 10 of 10
-Plan: 1 of 1 complete
-Status: Executing phase 10-graph-builder-worker
-Last activity: 2026-04-12 — completed 10-01 graph builder worker
+Phase: 11 of 11
+Plan: 1 of 2 complete
+Status: Executing phase 11-community-detection
+Last activity: 2026-04-12 — completed 11-01 community detection service
 
 Progress: [██████████] 100%
 
@@ -58,6 +58,8 @@ Progress: [██████████] 100%
 | Phase 09 P01 | 5min | 2 tasks | 3 files |
 | 10-graph-builder-worker | 1/1 | Complete |
 | Phase 10 P01 | 4min | 3 tasks | 7 files |
+| 11-community-detection | 1/2 | In Progress |
+| Phase 11 P01 | 4min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -79,6 +81,9 @@ All v1 decisions documented in PROJECT.md Key Decisions table. All outcomes mark
 - [10-01] Batch entity resolution: single find_entities_by_names call, then local resolve_entity
 - [10-01] 1 replica for graph-worker due to ~500MB RAM per spaCy process
 - [10-01] graph-worker depends on mongodb/redis/qdrant only (no minio)
+- [11-01] CPMVertexPartition for resolution-parameterized Leiden hierarchy
+- [11-01] Edge dedup by (min,max) pair with weight summing for undirected graph
+- [11-01] Parent/child linking by maximum entity overlap across adjacent levels
 
 ### Pending Todos
 
@@ -90,6 +95,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-12T23:39:26Z
-Stopped at: Completed 10-01-PLAN.md
-Resume with: Next phase or milestone planning
+Last session: 2026-04-12T23:49:01Z
+Stopped at: Completed 11-01-PLAN.md
+Resume with: Execute 11-02-PLAN.md (community rebuild API route)
