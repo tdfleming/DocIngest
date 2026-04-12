@@ -50,5 +50,10 @@ class Settings(BaseSettings):
     entity_confidence_threshold: float = 0.7
     max_entities_per_chunk: int = 50
 
+    # Community detection
+    community_resolutions: list[float] = [0.1, 0.5, 1.0]
+    community_max_chunks: int = 50
+    community_max_summary_sentences: int = 5
+
 
 settings = Settings()
