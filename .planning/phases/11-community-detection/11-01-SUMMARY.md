@@ -26,6 +26,7 @@ metrics:
   completed: "2026-04-12T23:49:01Z"
   tasks: 2
   files: 3
+requirements-completed: [COMM-01, COMM-02, COMM-03, COMM-04]
 ---
 
 # Phase 11 Plan 01: Community Detection Service Summary
