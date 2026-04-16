@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: — MVP + Graph RAG Extension
-status: unknown
-stopped_at: Completed 12-01-PLAN.md
-last_updated: "2026-04-16T09:02:20.058Z"
+status: Phase complete — ready for verification
+stopped_at: Completed 13-01-PLAN.md
+last_updated: "2026-04-16T18:42:05.062Z"
 progress:
   total_phases: 4
-  completed_phases: 1
-  total_plans: 4
-  completed_plans: 4
+  completed_phases: 2
+  total_plans: 5
+  completed_plans: 5
 ---
 
 # Project State
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-04)
 
 **Core value:** Documents go in, searchable vectorized chunks come out — reliably and tenant-isolated.
-**Current focus:** Phase 12 — graph-rag-traceability
+**Current focus:** Phase 13 — wire-graph-data-lifecycle-cleanup
 
 ## Current Position
 
-Phase: 13
-Plan: Not started
+Phase: 13 (wire-graph-data-lifecycle-cleanup) — EXECUTING
+Plan: 1 of 1
 
 ## Performance Metrics
 
@@ -59,6 +59,7 @@ Plan: Not started
 | Phase 12 P02 | 1min | 1 tasks | 1 files |
 | Phase 12-graph-rag-traceability P04 | 1min | 3 tasks | 3 files |
 | Phase 12 P01 | 3min | 1 tasks | 1 files |
+| Phase 13 P01 | 13 | 3 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -93,6 +94,10 @@ All v1 decisions documented in PROJECT.md Key Decisions table. All outcomes mark
 - [Phase 12]: [12-02] Used 'v1.0 extension' suffix on new Validated entries to distinguish from original 13 MVP bullets
 - [Phase 12]: [12-02] Did NOT touch Key Decisions table or Active section per 12-CONTEXT.md lock (those facts live elsewhere)
 - [Phase 12]: [12-01] Expanded REQUIREMENTS.md with all 25 Graph RAG REQ-IDs (Description, DoD, Verification criteria); flipped 3 orphaned REQ-IDs (GRAPH-WORKER-02/05, COMM-05) to Satisfied*
+- [Phase 13]: D-01/D-02: Gate at call site with if settings.graph_rag_enabled — NOT inside the helper, matching graph_builder.py pattern
+- [Phase 13]: D-03/D-04: Lenient error mode — graph_cleanup_failed logged with doc_id/tenant_id/error, route still returns 200/202
+- [Phase 13]: D-07/D-09: Graph cleanup order: graph first, then Qdrant chunks, then blobs, then MongoDB document record
+- [Phase 13]: D-12/D-13: graph_builder.py:119-121 safety net preserved untouched — defense-in-depth for races and non-route enqueues
 
 ### Pending Todos
 
@@ -104,6 +109,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-16T08:58:19.899Z
-Stopped at: Completed 12-01-PLAN.md
+Last session: 2026-04-16T18:42:05.058Z
+Stopped at: Completed 13-01-PLAN.md
 Resume with: Phase 11 complete. All community detection plans executed.

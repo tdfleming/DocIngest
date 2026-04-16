@@ -75,7 +75,7 @@ This file tracks the **Graph RAG extension** requirements delivered in phases 8-
     - `grep -n 'ensure_graph_indexes' src/docingest/db/mongodb.py` returns at least 1 match.
     - `grep -n 'unique=True' src/docingest/db/graph_store.py` returns at least 3 matches.
 
-- [ ] **GRAPH-06** — Graph data cleanup on document delete — Phase: 08 — Status: Pending — Phase 13 (gap closure)
+- [x] **GRAPH-06** — Graph data cleanup on document delete — Phase: 08 — Status: Pending — Phase 13 (gap closure)
   - **Description:** When a document is deleted, its contribution to the graph (entity doc_id entries, relationship doc_id entries, orphan entities whose doc_ids becomes empty) must be cleaned up. `delete_doc_graph_data` is implemented and correct, but the delete document API route does not call it, leaving orphaned graph data permanently in MongoDB.
   - **Definition of Done:**
     - `delete_document_route` in `documents.py` imports and calls `delete_doc_graph_data` when `graph_rag_enabled`.
@@ -196,7 +196,7 @@ This file tracks the **Graph RAG extension** requirements delivered in phases 8-
     - `grep -n "get_doc_chunks" src/docingest/workers/graph_builder.py` returns at least 2 matches (import + call).
     - `grep -n "scroll_filter" src/docingest/db/qdrant.py` returns at least 1 match in `get_doc_chunks`.
 
-- [ ] **GRAPH-WORKER-03** — Reprocess cleans up prior graph data synchronously — Phase: 10 — Status: Pending — Phase 13 (gap closure)
+- [x] **GRAPH-WORKER-03** — Reprocess cleans up prior graph data synchronously — Phase: 10 — Status: Pending — Phase 13 (gap closure)
   - **Description:** When a document is reprocessed, stale graph data from the previous build must be removed before the new build enqueues, otherwise community rebuild can consume a mix of old and new entities. The worker itself clears data on start (via `version > 1` or non-None `graph_status`), but the `reprocess_document` API route deletes Qdrant chunks without calling `delete_doc_graph_data`, leaving an inconsistency window.
   - **Definition of Done:**
     - `reprocess_document` route calls `delete_doc_graph_data` synchronously when `graph_rag_enabled`.

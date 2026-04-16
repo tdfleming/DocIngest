@@ -48,6 +48,8 @@ Full detail: [.planning/milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md)
 **Goal:** Delete and reprocess document routes must synchronously clean up graph data before the graph-worker can re-enter.
 **Requirements:** GRAPH-06, GRAPH-WORKER-03
 **Gap Closure:** FLOW-06 (delete leaves orphaned graph data permanently), FLOW-04 (reprocess stale-data window).
+**Plans:** 1/1 plans complete
+- [x] 13-01-PLAN.md — Wire delete_doc_graph_data into delete_document_route and reprocess_document with lenient error handling + integration/unit tests
 
 #### Phase 14: Surface Graph Status via Document API
 **Goal:** Graph processing fields written by the worker must be visible on `GET /v1/documents/{id}` and list responses.
