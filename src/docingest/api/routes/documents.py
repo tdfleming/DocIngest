@@ -10,7 +10,9 @@ from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel, Field, HttpUrl
 
 from docingest.api.auth import Tenant
+from docingest.config import settings
 from docingest.db.blob import delete_blob, download_blob, get_blob_client, upload_blob
+from docingest.db.graph_store import delete_doc_graph_data
 from docingest.db.mongodb import (
     delete_document,
     find_by_hash,
@@ -347,6 +349,19 @@ async def delete_document_route(tenant: Tenant, doc_id: str):
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
 
+    # Graph cleanup first (lenient — log and continue on failure, per D-03/D-05).
+    # The graph-worker at graph_builder.py:119-121 provides defense-in-depth if this fails.
+    if settings.graph_rag_enabled:
+        try:
+            await delete_doc_graph_data(db, tenant["tenant_id"], doc_id)
+        except Exception as e:
+            log.error(
+                "graph_cleanup_failed",
+                doc_id=doc_id,
+                tenant_id=tenant["tenant_id"],
+                error=str(e),
+            )
+
     # Delete chunks from Qdrant
     qdrant = await get_qdrant()
     await delete_doc_chunks(qdrant, tenant["tenant_id"], doc_id)
@@ -372,6 +387,19 @@ async def reprocess_document(request: Request, tenant: Tenant, doc_id: str):
     doc = await get_document(db, doc_id, tenant["tenant_id"])
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
+
+    # Graph cleanup first (lenient — log and continue on failure, per D-03/D-05).
+    # Must complete before version bump + enqueue per D-10 so the new pipeline starts clean.
+    if settings.graph_rag_enabled:
+        try:
+            await delete_doc_graph_data(db, tenant["tenant_id"], doc_id)
+        except Exception as e:
+            log.error(
+                "graph_cleanup_failed",
+                doc_id=doc_id,
+                tenant_id=tenant["tenant_id"],
+                error=str(e),
+            )
 
     # Delete existing chunks (may not exist on first processing)
     try:
