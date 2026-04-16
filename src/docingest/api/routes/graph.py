@@ -16,7 +16,7 @@ router = APIRouter(prefix="/graph", tags=["graph"])
 
 @router.post("/communities/rebuild")
 async def rebuild_communities(
-    tenant: Tenant = Depends(),  # noqa: B008
+    tenant: Tenant,
     db: AsyncIOMotorDatabase = Depends(get_db),  # noqa: B008
 ):
     """Rebuild community detection for the tenant's entity graph.
