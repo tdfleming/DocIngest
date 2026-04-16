@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: — MVP + Graph RAG Extension
 status: unknown
-stopped_at: Completed 12-03-PLAN.md
-last_updated: "2026-04-16T08:56:36.280Z"
+stopped_at: Completed 12-02-PLAN.md
+last_updated: "2026-04-16T08:56:40.039Z"
 progress:
   total_phases: 4
   completed_phases: 0
@@ -89,6 +89,8 @@ All v1 decisions documented in PROJECT.md Key Decisions table. All outcomes mark
 - [Phase 12]: [12-02] Applied four targeted Edit operations to PROJECT.md (not full rewrite) to remove Graph RAG from Out-of-Scope and add v1.0 extension Validated entries
 - [Phase 12-graph-rag-traceability]: [12-04] SUMMARY frontmatter reflects what was delivered by the plan, not the audit verdict — nuance belongs in REQUIREMENTS.md Status field
 - [Phase 12-graph-rag-traceability]: [12-04] COMM-04 recorded in 11-01-SUMMARY (where build_communities embedding shipped), not 11-02, intentionally diverging from 11-02-PLAN.md requirements declaration
+- [Phase 12]: [12-02] Used 'v1.0 extension' suffix on new Validated entries to distinguish from original 13 MVP bullets
+- [Phase 12]: [12-02] Did NOT touch Key Decisions table or Active section per 12-CONTEXT.md lock (those facts live elsewhere)
 
 ### Pending Todos
 
@@ -100,6 +102,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-16T08:56:21.633Z
-Stopped at: Completed 12-03-PLAN.md
+Last session: 2026-04-16T08:56:40.034Z
+Stopped at: Completed 12-02-PLAN.md
 Resume with: Phase 11 complete. All community detection plans executed.
