@@ -24,4 +24,20 @@
 
 **What's next:** TBD — next milestone discussion needed
 
+### v1.0 Graph RAG Extension (2026-04-12)
+
+**Delivered:** Knowledge-graph pipeline layered onto v1.0 MVP — spaCy-based entity/relationship extraction over chunked content, MongoDB graph store with tenant isolation, and on-demand Leiden community detection with TF-IDF summaries. All functionality gated by `GRAPH_RAG_ENABLED`.
+
+**Phases:** 8-11 (7 plans)
+**Requirements declared:** 25 (GRAPH-01..07, EE-01..08, GRAPH-WORKER-01..05, COMM-01..05)
+**Status:** ⚠ Gap closure in flight (phases 12-15) — see `.planning/v1.0-MILESTONE-AUDIT.md`.
+
+**Stats:**
+- graph-worker: new ARQ worker with dedicated queue (`arq:queue:graph`)
+- New services: `entity_extraction`, `community_detection`
+- New models: Entity, Relationship, Community
+- New dependencies: spaCy (`en_core_web_lg`), python-igraph, leidenalg, scikit-learn
+
+**Git range:** `85e5a0e` (v1.0 ship) → `479736f` (gap closure phases added)
+
 ---

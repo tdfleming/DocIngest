@@ -25,6 +25,8 @@ Documents go in, searchable vectorized chunks come out — reliably and tenant-i
 - ✓ Processing status tracking (queued/processing/completed/failed) — v1.0
 - ✓ Error classification with error_type, error_stage, and actionable messages — v1.0
 - ✓ Structured JSON logging with trace IDs and per-stage timing — v1.0
+- ✓ Graph RAG pipeline: entity extraction (spaCy NER + SVO relationships), knowledge graph storage (MongoDB entities/relationships), and community detection (multi-resolution Leiden + TF-IDF summaries) — v1.0 extension
+- ✓ Feature gating: `GRAPH_RAG_ENABLED` environment flag controls graph pipeline activation end-to-end (lifespan, chunker enqueue, worker, API) — v1.0 extension
 
 ### Active
 
@@ -39,7 +41,6 @@ Documents go in, searchable vectorized chunks come out — reliably and tenant-i
 - Custom embedding model hosting — GPU complexity, support configurable endpoints instead
 - Real-time document sync (Drive, SharePoint) — OAuth complexity per connector
 - OCR for scanned PDFs — accuracy/performance concerns, defer to v2+
-- Graph RAG / knowledge graph — research-grade complexity for marginal gains
 - Fine-grained RBAC per document — tenant-level isolation sufficient for v1
 
 ## Context
@@ -48,6 +49,8 @@ Shipped v1.0 with 2,118 LOC Python.
 Tech stack: FastAPI, ARQ (Redis job queue), Docling (doc conversion), FastEmbed (bge-small-en-v1.5, 384-dim), MongoDB (metadata), Qdrant (vectors), Redis (jobs + rate limiting), MinIO (blob storage).
 All 23 v1 requirements shipped. No requirements adjusted or dropped.
 Milestone audit passed with 100% scores across all categories.
+
+Extended with Graph RAG pipeline post-ship (phases 8-11, 2026-04-12): entity/relationship extraction via spaCy, MongoDB graph store, Leiden community detection. See `.planning/v1.0-MILESTONE-AUDIT.md` for gap analysis.
 
 ## Constraints
 
@@ -74,4 +77,4 @@ Milestone audit passed with 100% scores across all categories.
 | Lambda for Pydantic default_factory | datetime.now(UTC) needs argument unlike utcnow | ✓ Good — clean pattern |
 
 ---
-*Last updated: 2026-03-04 after v1.0 milestone*
+*Last updated: 2026-04-16 after v1.0 gap closure planning*

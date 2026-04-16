@@ -26,6 +26,14 @@ dependencies = [
     # Local embeddings
     "fastembed>=0.4,<1",
 
+    # NLP
+    "spacy>=3.7,<4",
+
+    # Community detection
+    "python-igraph>=0.11,<2",
+    "leidenalg>=0.10,<1",
+    "scikit-learn>=1.5,<2",
+
     # Utilities
     "pydantic>=2.10,<3",
     "pydantic-settings>=2.7,<3",
