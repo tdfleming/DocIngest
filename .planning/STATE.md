@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: — MVP + Graph RAG Extension
 status: unknown
-stopped_at: Completed 12-02-PLAN.md
-last_updated: "2026-04-16T08:56:40.039Z"
+stopped_at: Completed 12-01-PLAN.md
+last_updated: "2026-04-16T08:58:19.907Z"
 progress:
   total_phases: 4
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 4
-  completed_plans: 3
+  completed_plans: 4
 ---
 
 # Project State
@@ -58,6 +58,7 @@ Plan: 4 of 4
 | Phase 12 P03 | 1min | 1 tasks | 1 files |
 | Phase 12 P02 | 1min | 1 tasks | 1 files |
 | Phase 12-graph-rag-traceability P04 | 1min | 3 tasks | 3 files |
+| Phase 12 P01 | 3min | 1 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -91,6 +92,7 @@ All v1 decisions documented in PROJECT.md Key Decisions table. All outcomes mark
 - [Phase 12-graph-rag-traceability]: [12-04] COMM-04 recorded in 11-01-SUMMARY (where build_communities embedding shipped), not 11-02, intentionally diverging from 11-02-PLAN.md requirements declaration
 - [Phase 12]: [12-02] Used 'v1.0 extension' suffix on new Validated entries to distinguish from original 13 MVP bullets
 - [Phase 12]: [12-02] Did NOT touch Key Decisions table or Active section per 12-CONTEXT.md lock (those facts live elsewhere)
+- [Phase 12]: [12-01] Expanded REQUIREMENTS.md with all 25 Graph RAG REQ-IDs (Description, DoD, Verification criteria); flipped 3 orphaned REQ-IDs (GRAPH-WORKER-02/05, COMM-05) to Satisfied*
 
 ### Pending Todos
 
@@ -102,6 +104,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-16T08:56:40.034Z
-Stopped at: Completed 12-02-PLAN.md
+Last session: 2026-04-16T08:58:19.899Z
+Stopped at: Completed 12-01-PLAN.md
 Resume with: Phase 11 complete. All community detection plans executed.

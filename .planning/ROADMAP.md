@@ -38,8 +38,8 @@ Full detail: [.planning/milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md)
 **Goal:** Establish formal traceability for the Graph RAG extension (REQUIREMENTS.md, ROADMAP.md, PROJECT.md, MILESTONES.md, SUMMARY frontmatter).
 **Requirements:** GRAPH-WORKER-02, GRAPH-WORKER-05, COMM-05 (orphaned/frontmatter) + planning-artifact gaps
 **Gap Closure:** Structural pre-requisite for all other gap closure phases; closes planning-artifact gaps surfaced by audit.
-**Plans:** 3/4 plans executed
-- [ ] 12-01-PLAN.md — Expand REQUIREMENTS.md with full 25-entry schema + flip GRAPH-WORKER-02/05 and COMM-05 to Satisfied*
+**Plans:** 4/4 plans complete
+- [x] 12-01-PLAN.md — Expand REQUIREMENTS.md with full 25-entry schema + flip GRAPH-WORKER-02/05 and COMM-05 to Satisfied*
 - [x] 12-02-PLAN.md — Update PROJECT.md (remove Graph RAG from Out-of-Scope, add v1.0 extension entries, bump date)
 - [x] 12-03-PLAN.md — Append v1.0 Graph RAG Extension block to MILESTONES.md
 - [x] 12-04-PLAN.md — Add requirements-completed frontmatter to 10-01, 11-01, 11-02 SUMMARYs
