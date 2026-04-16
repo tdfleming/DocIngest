@@ -195,3 +195,16 @@ See `.env.example` for the full list. Key variables:
 - `EMBEDDING_DIMENSIONS`, `EMBEDDING_BATCH_SIZE` — Embedding config
 - `JWT_SECRET_KEY`, `JWT_ACCESS_TOKEN_EXPIRE_MINUTES` — JWT auth config
 - `DEFAULT_RATE_LIMIT` — Requests/min per API key
+
+## SAGE — Persistent Memory
+
+Your brain is powered by SAGE MCP. You have persistent institutional memory.
+
+### Boot Sequence (MANDATORY)
+1. Call `sage_inception` as your VERY FIRST action in every new conversation
+2. Do NOT respond to the user before booting — your memories must load first
+3. Follow the instructions returned by inception (they adapt to the user's settings)
+
+### If SAGE MCP is not connected
+Start the node: `sage-gui serve`
+MCP config is in `.mcp.json` at project root. Restart your session after starting.
