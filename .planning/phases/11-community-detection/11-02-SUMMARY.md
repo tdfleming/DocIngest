@@ -25,6 +25,7 @@ metrics:
   completed: "2026-04-12"
   tasks: 2
   files: 3
+requirements-completed: [COMM-05]
 ---
 
 # Phase 11 Plan 02: Community Detection Tests & API Summary
