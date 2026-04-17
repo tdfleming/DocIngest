@@ -55,8 +55,8 @@ Full detail: [.planning/milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md)
 **Goal:** Graph processing fields written by the worker must be visible on `GET /v1/documents/{id}` and list responses.
 **Requirements:** GRAPH-WORKER-01, GRAPH-WORKER-04
 **Gap Closure:** INT-02 (`graph_status`, `entity_count`, `relationship_count` stripped by `_doc_to_response`).
-**Plans:** 1 plan
-- [ ] 14-01-PLAN.md — Add graph_built_at to Document model, extend DocumentResponse + _doc_to_response with 4 graph fields, integration tests
+**Plans:** 1/1 plans complete
+- [x] 14-01-PLAN.md — Add graph_built_at to Document model, extend DocumentResponse + _doc_to_response with 4 graph fields, integration tests
 
 #### Phase 15: Graph RAG Code Quality & Hardening
 **Goal:** Close code-quality and fragility debt items identified in the audit.

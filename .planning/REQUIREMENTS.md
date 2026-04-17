@@ -176,7 +176,7 @@ This file tracks the **Graph RAG extension** requirements delivered in phases 8-
 
 ## Graph Builder Worker (Phase 10)
 
-- [ ] **GRAPH-WORKER-01** — Document `graph_status` tracked through build stages — Phase: 10 — Status: Pending — Phase 14 (gap closure)
+- [x] **GRAPH-WORKER-01** — Document `graph_status` tracked through build stages — Phase: 10 — Status: Pending — Phase 14 (gap closure)
   - **Description:** The graph-worker writes `graph_status` (building / complete / failed), `entity_count`, `relationship_count`, and `graph_built_at` to each document's MongoDB record as it progresses. The `Document` model carries these fields, but `_doc_to_response` in `documents.py` strips them from `DocumentResponse`, so API consumers (including the frontend) cannot see graph-build status per document.
   - **Definition of Done:**
     - `DocumentResponse` in `documents.py` includes `graph_status`, `entity_count`, `relationship_count`.
@@ -203,7 +203,7 @@ This file tracks the **Graph RAG extension** requirements delivered in phases 8-
   - **Verification criteria:**
     - `grep -n 'delete_doc_graph_data' src/docingest/api/routes/documents.py` returns at least 1 match in `reprocess_document` function (currently 0 — gap).
 
-- [ ] **GRAPH-WORKER-04** — Worker writes `entity_count` and `relationship_count` surfaced via API — Phase: 10 — Status: Pending — Phase 14 (gap closure)
+- [x] **GRAPH-WORKER-04** — Worker writes `entity_count` and `relationship_count` surfaced via API — Phase: 10 — Status: Pending — Phase 14 (gap closure)
   - **Description:** Shares the same root cause as GRAPH-WORKER-01: the worker writes the counts to the document record, but `_doc_to_response` in `documents.py` omits them. Consumers cannot see how rich a document's graph build was.
   - **Definition of Done:**
     - `DocumentResponse` in `documents.py` includes `entity_count` and `relationship_count`.
