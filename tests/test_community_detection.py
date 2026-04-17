@@ -252,3 +252,123 @@ class TestDetectCommunitiesMultiResolution:
         high_res = _detect_communities_multi_resolution(graph, [1.0])
         # Low resolution should merge clusters -> fewer or equal communities
         assert len(low_res[0]) <= len(high_res[0])
+
+
+# ---------------------------------------------------------------------------
+# TestEntityIdToEntityRobustness tests (COMM-01 / COMM-02)
+# ---------------------------------------------------------------------------
+
+
+@needs_graph
+class TestEntityIdToEntityRobustness:
+    """Tests proving id-keyed entity lookup is robust against list ordering (COMM-01/COMM-02)."""
+
+    def test_scrambled_entity_order_resolves_correctly(self):
+        """Vertex names in the graph are entity IDs, so lookup must use IDs not list indices."""
+        from docingest.services.community_detection import _build_graph
+
+        # Create entities with known IDs
+        e1 = _make_entity("Alpha", mention_count=10)
+        e2 = _make_entity("Beta", mention_count=20)
+        e3 = _make_entity("Gamma", mention_count=30)
+        e4 = _make_entity("Delta", mention_count=5)
+
+        # Build graph in original order
+        original_order = [e1, e2, e3, e4]
+        rels = [
+            _make_relationship(str(e1["_id"]), str(e2["_id"])),
+            _make_relationship(str(e3["_id"]), str(e4["_id"])),
+        ]
+        graph, id_to_idx = _build_graph(original_order, rels)
+
+        # Now build entity_id_to_entity with SCRAMBLED order (reversed)
+        scrambled_order = [e4, e3, e2, e1]
+        entity_id_to_entity = {str(e["_id"]): e for e in scrambled_order}
+
+        # For each vertex in the graph, look up via graph.vs[idx]["name"]
+        for idx in range(graph.vcount()):
+            vertex_name = graph.vs[idx]["name"]
+            resolved = entity_id_to_entity[vertex_name]
+            # The resolved entity must match the ORIGINAL entity with that _id
+            assert str(resolved["_id"]) == vertex_name
+            # Verify entity_name attribute matches
+            assert resolved["name"] == graph.vs[idx]["entity_name"]
+
+    def test_naive_enumerate_would_fail_with_scrambled_order(self):
+        """Prove that the OLD enumerate-based approach would break with reordered entities."""
+        from docingest.services.community_detection import _build_graph
+
+        e1 = _make_entity("First")
+        e2 = _make_entity("Second")
+        e3 = _make_entity("Third")
+
+        # Build graph in order [e1, e2, e3]
+        rels = [_make_relationship(str(e1["_id"]), str(e2["_id"]))]
+        graph, _ = _build_graph([e1, e2, e3], rels)
+
+        # Scrambled list: e3, e1, e2
+        scrambled = [e3, e1, e2]
+
+        # Old approach: idx_to_entity = {i: ent for i, ent in enumerate(scrambled)}
+        old_lookup = {i: ent for i, ent in enumerate(scrambled)}
+        # Vertex 0 in graph corresponds to e1 (built with [e1, e2, e3])
+        # But old_lookup[0] gives e3 (scrambled[0]) -- WRONG
+        assert old_lookup[0]["name"] == "Third"  # naive gives wrong entity
+        assert graph.vs[0]["entity_name"] == "First"  # graph says vertex 0 is "First"
+
+        # New approach: id-keyed lookup works correctly
+        new_lookup = {str(e["_id"]): e for e in scrambled}
+        resolved = new_lookup[graph.vs[0]["name"]]
+        assert resolved["name"] == "First"  # correct!
+
+
+# ---------------------------------------------------------------------------
+# TestFetchChunkTextsGuard tests (COMM-03)
+# ---------------------------------------------------------------------------
+
+
+@needs_graph
+class TestFetchChunkTextsGuard:
+    """Tests for collection_exists guard in _fetch_chunk_texts (COMM-03)."""
+
+    async def test_returns_empty_when_collection_missing(self, monkeypatch):
+        """_fetch_chunk_texts returns [] when tenant collection does not exist."""
+        from unittest.mock import AsyncMock
+
+        from docingest.services import community_detection as cd_mod
+
+        mock_client = AsyncMock()
+        monkeypatch.setattr(cd_mod, "get_qdrant", AsyncMock(return_value=mock_client))
+        monkeypatch.setattr(cd_mod, "collection_exists", AsyncMock(return_value=False))
+
+        result = await cd_mod._fetch_chunk_texts("nonexistent-tenant", ["chunk1", "chunk2"])
+        assert result == []
+        # Verify scroll was never called since collection doesn't exist
+        mock_client.scroll.assert_not_called()
+
+    async def test_returns_empty_for_empty_chunk_ids(self):
+        """_fetch_chunk_texts returns [] immediately when chunk_ids is empty."""
+        from docingest.services.community_detection import _fetch_chunk_texts
+
+        # No mocking needed -- the function short-circuits before any I/O
+        result = await _fetch_chunk_texts("any-tenant", [])
+        assert result == []
+
+    async def test_proceeds_when_collection_exists(self, monkeypatch):
+        """_fetch_chunk_texts calls scroll when collection exists."""
+        from unittest.mock import AsyncMock, MagicMock
+
+        from docingest.services import community_detection as cd_mod
+
+        mock_point = MagicMock()
+        mock_point.payload = {"chunk_text": "hello world"}
+
+        mock_client = AsyncMock()
+        mock_client.scroll = AsyncMock(return_value=([mock_point], None))
+
+        monkeypatch.setattr(cd_mod, "get_qdrant", AsyncMock(return_value=mock_client))
+        monkeypatch.setattr(cd_mod, "collection_exists", AsyncMock(return_value=True))
+
+        result = await cd_mod._fetch_chunk_texts("existing-tenant", ["chunk1"])
+        assert result == ["hello world"]
+        mock_client.scroll.assert_called_once()
