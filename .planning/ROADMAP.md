@@ -70,8 +70,10 @@ Full detail: [milestones/v1.0.1-ROADMAP.md](milestones/v1.0.1-ROADMAP.md)
   2. `GET /v1/graph/entities/{id}` returns entity detail including linked document IDs
   3. `GET /v1/graph/communities` returns a paginated list of communities with resolution_level, entity_count, and summary
   4. `GET /v1/graph/communities/{id}` returns community detail with full summary and member entity list
-  5. `GET /v1/graph/search` (or `/v1/search` with `include_communities` flag) returns top-k communities by embedding similarity to a query string
-**Plans**: TBD
+  5. `POST /v1/graph/search` returns top-k communities by embedding similarity to a query string
+**Plans:** 1 plan
+Plans:
+- [ ] 16-01-PLAN.md — DB helpers + 5 route handlers + Pydantic models + 14+ tests
 **UI hint**: no
 
 ### Phase 17: Document Graph Status
@@ -142,7 +144,7 @@ Full detail: [milestones/v1.0.1-ROADMAP.md](milestones/v1.0.1-ROADMAP.md)
 | 13. Wire Graph Data Lifecycle Cleanup      | v1.0.1    | 1/1   | Complete    | 2026-04-16 |
 | 14. Surface Graph Status via Document API  | v1.0.1    | 1/1   | Complete    | 2026-04-17 |
 | 15. Graph RAG Code Quality & Hardening     | v1.0.1    | 1/1   | Complete    | 2026-04-17 |
-| 16. Graph Frontend APIs                    | v1.1      | 0/TBD | Not started | -          |
+| 16. Graph Frontend APIs                    | v1.1      | 0/1   | Planned     | -          |
 | 17. Document Graph Status                  | v1.1      | 0/TBD | Not started | -          |
 | 18. Entity Explorer                        | v1.1      | 0/TBD | Not started | -          |
 | 19. Community Browser                      | v1.1      | 0/TBD | Not started | -          |
