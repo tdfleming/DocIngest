@@ -5,7 +5,6 @@ from bson import ObjectId
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
 
 from docingest.config import settings
-from docingest.db.graph_store import ensure_graph_indexes as _ensure_graph_indexes
 from docingest.models.document import DocumentStatus
 
 _client: AsyncIOMotorClient | None = None
@@ -41,9 +40,6 @@ async def ensure_indexes(db: AsyncIOMotorDatabase) -> None:
     await db.app_logs.create_index("trace_id")
     await db.app_logs.create_index("doc_id")
     await db.app_logs.create_index("component")
-
-    if settings.graph_rag_enabled:
-        await _ensure_graph_indexes(db)
 
 
 # --- Document operations ---

@@ -214,11 +214,11 @@ def resolve_entity(
 
 async def extract_entities_async(text: str) -> list[dict]:
     """Async wrapper for :func:`extract_entities`."""
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
     return await loop.run_in_executor(None, extract_entities, text)
 
 
 async def extract_relationships_async(text: str, entities: list[dict]) -> list[dict]:
     """Async wrapper for :func:`extract_relationships`."""
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
     return await loop.run_in_executor(None, extract_relationships, text, entities)

@@ -43,6 +43,20 @@ _known_collections: set[str] = set()
 _collection_lock = asyncio.Lock()
 
 
+async def collection_exists(client: AsyncQdrantClient, tenant_id: str) -> bool:
+    """Return True if the tenant's Qdrant collection exists.
+
+    Uses the module-level _known_collections cache to avoid redundant RPCs.
+    """
+    name = _collection_name(tenant_id)
+    if name in _known_collections:
+        return True
+    collections = await client.get_collections()
+    existing = {c.name for c in collections.collections}
+    _known_collections.update(existing)
+    return name in existing
+
+
 async def ensure_collection(client: AsyncQdrantClient, tenant_id: str) -> None:
     name = _collection_name(tenant_id)
     if name in _known_collections:

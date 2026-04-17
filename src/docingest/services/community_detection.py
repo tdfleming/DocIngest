@@ -22,7 +22,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 
 from docingest.config import settings
 from docingest.db.graph_store import upsert_community
-from docingest.db.qdrant import get_qdrant
+from docingest.db.qdrant import collection_exists, get_qdrant
 from docingest.services.embedding import embed_texts
 
 log = structlog.get_logger()
@@ -49,7 +49,7 @@ async def build_communities(
         resolutions=resolutions,
     )
 
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
 
     # 1. Load all entities and relationships for tenant
     entities: list[dict[str, Any]] = await db.entities.find(
@@ -88,9 +88,9 @@ async def build_communities(
         None, _detect_communities_multi_resolution, graph, resolutions
     )
 
-    # 5. Build vertex-index to entity lookup
-    idx_to_entity: dict[int, dict[str, Any]] = {
-        i: ent for i, ent in enumerate(entities)
+    # 5. Build id-keyed entity lookup (robust against vertex reordering)
+    entity_id_to_entity: dict[str, dict[str, Any]] = {
+        str(e["_id"]): e for e in entities
     }
 
     # 6. Process each community: title, summary, embedding, upsert
@@ -104,7 +104,9 @@ async def build_communities(
             if len(members) < 2:
                 continue  # filter singletons
 
-            member_entities = [idx_to_entity[m] for m in members]
+            member_entities = [
+                entity_id_to_entity[graph.vs[m]["name"]] for m in members
+            ]
             entity_ids = [str(e["_id"]) for e in member_entities]
 
             # Deterministic title from top entities
@@ -336,6 +338,9 @@ async def _fetch_chunk_texts(
         return []
 
     client = await get_qdrant()
+    if not await collection_exists(client, tenant_id):
+        return []
+
     collection = f"tenant_{tenant_id}"
     texts: list[str] = []
 
