@@ -144,7 +144,7 @@ Plans:
 | 13. Wire Graph Data Lifecycle Cleanup      | v1.0.1    | 1/1   | Complete    | 2026-04-16 |
 | 14. Surface Graph Status via Document API  | v1.0.1    | 1/1   | Complete    | 2026-04-17 |
 | 15. Graph RAG Code Quality & Hardening     | v1.0.1    | 1/1   | Complete    | 2026-04-17 |
-| 16. Graph Frontend APIs                    | v1.1      | 1/1 | Complete   | 2026-04-17 |
+| 16. Graph Frontend APIs                    | v1.1      | 1/1 | Complete    | 2026-04-17 |
 | 17. Document Graph Status                  | v1.1      | 0/TBD | Not started | -          |
 | 18. Entity Explorer                        | v1.1      | 0/TBD | Not started | -          |
 | 19. Community Browser                      | v1.1      | 0/TBD | Not started | -          |
