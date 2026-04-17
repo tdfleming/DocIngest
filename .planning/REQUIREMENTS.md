@@ -1,7 +1,7 @@
 # Requirements: DocIngest
 
 **Current milestone:** v1.0 (gap closure)
-**Last updated:** 2026-04-16
+**Last updated:** 2026-04-17
 
 v1.0 MVP requirements (23 IDs, all satisfied) are archived at [.planning/milestones/v1.0-REQUIREMENTS.md](milestones/v1.0-REQUIREMENTS.md).
 
@@ -12,8 +12,8 @@ This file tracks the **Graph RAG extension** requirements delivered in phases 8-
 ## Coverage
 
 - **Total REQ-IDs:** 25
-- **Satisfied:** 18
-- **Partial (gap closure in flight):** 5
+- **Satisfied:** 23
+- **Partial (gap closure in flight):** 0
 - **Orphaned (traceability only):** 4
 
 <!-- hr -->
@@ -69,10 +69,11 @@ This file tracks the **Graph RAG extension** requirements delivered in phases 8-
     - `ensure_graph_indexes` exported from `docingest.db.graph_store`.
     - Entities unique index on `(tenant_id, name, entity_type)` present.
     - Relationships unique index on `(tenant_id, source_entity_id, target_entity_id, relation_type)` present.
-    - `mongodb.py::ensure_indexes` conditionally calls `ensure_graph_indexes` when `graph_rag_enabled=True`.
+    - `ensure_graph_indexes` is called from `app.py` lifespan when `graph_rag_enabled=True` (INT-01 fix in phase 15 removed the duplicate call that was in `mongodb.py::ensure_indexes`; the canonical caller is now app.py lifespan only).
   - **Verification criteria:**
     - `grep -n 'def ensure_graph_indexes' src/docingest/db/graph_store.py` returns 1 match.
-    - `grep -n 'ensure_graph_indexes' src/docingest/db/mongodb.py` returns at least 1 match.
+    - `grep -n 'ensure_graph_indexes' src/docingest/api/app.py` returns at least 1 match (canonical caller in lifespan).
+    - `grep -n 'ensure_graph_indexes' src/docingest/db/mongodb.py` returns 0 matches (removed in phase 15 INT-01 fix; separation of concerns — graph-specific setup belongs in app.py composition layer).
     - `grep -n 'unique=True' src/docingest/db/graph_store.py` returns at least 3 matches.
 
 - [x] **GRAPH-06** — Graph data cleanup on document delete — Phase: 08/13 — Status: Satisfied (VERIFICATION.md: 13-VERIFICATION.md)
@@ -84,7 +85,7 @@ This file tracks the **Graph RAG extension** requirements delivered in phases 8-
     - `grep -n 'delete_doc_graph_data' src/docingest/api/routes/documents.py` returns at least 1 call site (currently 0 — gap).
 
 - [x] **GRAPH-07** — `ensure_graph_indexes` helper — Phase: 08 — Status: Satisfied* (no VERIFICATION.md)
-  - **Description:** Standalone async `ensure_graph_indexes(db)` function in `graph_store.py`. Called conditionally from both `mongodb.py::ensure_indexes` (when `graph_rag_enabled`) and from `app.py` lifespan. The dual-call is idempotent but redundant (INT-01 tech debt tracked for phase 15).
+  - **Description:** Standalone async `ensure_graph_indexes(db)` function in `graph_store.py`. Called conditionally from `app.py` lifespan (when `graph_rag_enabled`). Prior to phase 15 INT-01 fix, it was also called from `mongodb.py::ensure_indexes` — that duplicate was removed; the lifespan call is now the sole source.
   - **Definition of Done:**
     - `ensure_graph_indexes` is a standalone exportable async function in `graph_store.py`.
     - Function is callable and creates all required indexes idempotently.
@@ -166,13 +167,14 @@ This file tracks the **Graph RAG extension** requirements delivered in phases 8-
     - `python -c "from docingest.config import settings; assert settings.entity_confidence_threshold == 0.7; print('OK')"` exits 0.
     - `grep -n 'entity_confidence_threshold' src/docingest/services/entity_extraction.py` returns at least 1 match.
 
-- [x] **EE-08** — Async wrappers for blocking spaCy calls — Phase: 09 — Status: Pending — Phase 15 (gap closure)
-  - **Description:** `extract_entities_async` and `extract_relationships_async` wrap the sync spaCy calls via `run_in_executor`. Current implementation uses the deprecated `asyncio.get_event_loop()` (raises DeprecationWarning on Python 3.10+, `RuntimeError` on 3.14+). Functional on Python 3.12 but diverges from the codebase convention (which uses `get_running_loop`). Phase 15 will align.
+- [x] **EE-08** — Async wrappers for blocking spaCy calls — Phase: 09 — Status: Satisfied (VERIFICATION.md: 15-VERIFICATION.md)
+  - **Description:** `extract_entities_async` and `extract_relationships_async` wrap the sync spaCy calls via `run_in_executor`. Phase 15 migrated both from the deprecated `asyncio.get_event_loop()` (raises DeprecationWarning on Python 3.10+, `RuntimeError` on 3.14+) to `asyncio.get_running_loop()`, aligning with the codebase convention.
   - **Definition of Done:**
     - `extract_entities_async` and `extract_relationships_async` use `asyncio.get_running_loop()` instead of `get_event_loop()`.
   - **Verification criteria:**
     - `grep -n 'def extract_entities_async\|def extract_relationships_async' src/docingest/services/entity_extraction.py` returns 2 matches.
-    - `grep -n 'get_running_loop' src/docingest/services/entity_extraction.py` returns 2 matches (currently 0 — gap).
+    - `grep -n 'get_running_loop' src/docingest/services/entity_extraction.py` returns 2 matches.
+    - `grep -n 'get_event_loop' src/docingest/services/entity_extraction.py` returns 0 matches.
 
 ## Graph Builder Worker (Phase 10)
 
@@ -223,20 +225,23 @@ This file tracks the **Graph RAG extension** requirements delivered in phases 8-
 
 ## Community Detection (Phase 11)
 
-- [x] **COMM-01** — Leiden clustering over entity graph — Phase: 11 — Status: Partial — Phase 15 (fragile idx_to_entity invariant)
-  - **Description:** `build_communities(db, tenant_id)` loads all tenant entities and relationships from MongoDB, builds an igraph via `_build_graph`, runs Leiden via `leidenalg.CPMVertexPartition` with per-level `resolution_parameter`, and filters singleton communities (size < 2). All blocking igraph/leidenalg calls are wrapped in `loop.run_in_executor`. Known fragility: `idx_to_entity` uses `enumerate(entities)` ordering, which implicitly assumes igraph vertex order equals list-insertion order — phase 15 will make this robust.
+- [x] **COMM-01** — Leiden clustering over entity graph — Phase: 11 — Status: Satisfied (VERIFICATION.md: 15-VERIFICATION.md)
+  - **Description:** `build_communities(db, tenant_id)` loads all tenant entities and relationships from MongoDB, builds an igraph via `_build_graph`, runs Leiden via `leidenalg.CPMVertexPartition` with per-level `resolution_parameter`, and filters singleton communities (size < 2). All blocking igraph/leidenalg calls are wrapped in `loop.run_in_executor`. Phase 15 replaced the fragile `idx_to_entity` enumerate-based lookup with a robust `entity_id_to_entity` id-keyed dict using `graph.vs[m]["name"]` for member resolution.
   - **Definition of Done:**
     - `build_communities` exported from `docingest.services.community_detection`.
     - Uses `leidenalg.CPMVertexPartition` (not `ModularityVertexPartition`).
     - Singleton communities (< 2 entities) are filtered.
     - `build_communities` uses `run_in_executor` for igraph and leidenalg calls.
+    - Member entity lookup uses `entity_id_to_entity[graph.vs[m]["name"]]` (id-keyed, not enumerate-based).
   - **Verification criteria:**
     - `grep -n "def build_communities" src/docingest/services/community_detection.py` returns 1 match.
     - `grep -n "CPMVertexPartition" src/docingest/services/community_detection.py` returns at least 1 match.
     - `grep -n "run_in_executor" src/docingest/services/community_detection.py` returns multiple matches.
+    - `grep -n "idx_to_entity" src/docingest/services/community_detection.py` returns 0 matches.
+    - `grep -n "entity_id_to_entity" src/docingest/services/community_detection.py` returns at least 2 matches.
 
-- [x] **COMM-02** — Multi-resolution hierarchical community detection — Phase: 11 — Status: Partial — Phase 15 (same fragility as COMM-01)
-  - **Description:** `_detect_communities_multi_resolution` iterates over the configured resolution list (default `[0.1, 0.5, 1.0]`), running Leiden at each level. Parent/child hierarchy is linked post-upsert by finding the coarser-level community with maximum entity_ids overlap. Same idx-ordering fragility as COMM-01.
+- [x] **COMM-02** — Multi-resolution hierarchical community detection — Phase: 11 — Status: Satisfied (VERIFICATION.md: 15-VERIFICATION.md)
+  - **Description:** `_detect_communities_multi_resolution` iterates over the configured resolution list (default `[0.1, 0.5, 1.0]`), running Leiden at each level. Parent/child hierarchy is linked post-upsert by finding the coarser-level community with maximum entity_ids overlap. Phase 15 resolved the same idx-ordering fragility as COMM-01 — all community member lookups now use the id-keyed approach.
   - **Definition of Done:**
     - `_detect_communities_multi_resolution` accepts a list of resolutions and returns per-level results.
     - `settings.community_resolutions` exists with default `[0.1, 0.5, 1.0]`.
@@ -246,22 +251,26 @@ This file tracks the **Graph RAG extension** requirements delivered in phases 8-
     - `python -c "from docingest.config import settings; assert settings.community_resolutions == [0.1, 0.5, 1.0]; print('OK')"` exits 0.
     - `grep -n "community_resolutions" src/docingest/config.py` returns 1 match.
 
-- [x] **COMM-03** — TF-IDF extractive summaries per community — Phase: 11 — Status: Partial — Phase 15 (missing ensure_collection guard in `_fetch_chunk_texts`)
-  - **Description:** `_extractive_summary(texts, max_sentences)` uses `TfidfVectorizer(stop_words="english", max_features=5000)` to score sentences by mean TF-IDF, selects the top-k in original order, and joins them. `_fetch_chunk_texts(tenant_id, chunk_ids, batch_size)` scrolls Qdrant using a `HasIdCondition` filter in batches. Known fragility: `_fetch_chunk_texts` does not guard against a missing tenant collection (Qdrant throws on nonexistent collection) — phase 15 adds the guard.
+- [x] **COMM-03** — TF-IDF extractive summaries per community — Phase: 11 — Status: Satisfied (VERIFICATION.md: 15-VERIFICATION.md)
+  - **Description:** `_extractive_summary(texts, max_sentences)` uses `TfidfVectorizer(stop_words="english", max_features=5000)` to score sentences by mean TF-IDF, selects the top-k in original order, and joins them. `_fetch_chunk_texts(tenant_id, chunk_ids, batch_size)` scrolls Qdrant using a `HasIdCondition` filter in batches. Phase 15 added the `collection_exists` guard — `_fetch_chunk_texts` now returns `[]` gracefully when the tenant collection does not exist, without raising.
   - **Definition of Done:**
     - `_extractive_summary` and `_fetch_chunk_texts` both exist in `community_detection.py`.
     - `settings.community_max_chunks` and `settings.community_max_summary_sentences` exist with defaults 50 and 5.
+    - `_fetch_chunk_texts` guards with `collection_exists` before scrolling and returns `[]` when collection missing.
   - **Verification criteria:**
     - `grep -n "def _extractive_summary\|def _fetch_chunk_texts" src/docingest/services/community_detection.py` returns 2 matches.
     - `python -c "from docingest.config import settings; assert settings.community_max_chunks == 50; assert settings.community_max_summary_sentences == 5; print('OK')"` exits 0.
+    - `grep -n "await collection_exists" src/docingest/services/community_detection.py` returns 1 match (inside `_fetch_chunk_texts`).
+    - `grep -n "def collection_exists" src/docingest/db/qdrant.py` returns 1 match.
 
-- [x] **COMM-04** — Community embedding via FastEmbed — Phase: 11 — Status: Partial — Phase 15 (gap closure: asyncio deprecation)
-  - **Description:** Community summaries are embedded by calling `embed_texts([summary])` via `loop.run_in_executor`; the vector is stored as `summary_embedding` on the community record using the same FastEmbed model used for chunk embeddings. Known fragility: `loop = asyncio.get_event_loop()` at line 52 uses the deprecated API (same issue as EE-08) — phase 15 migrates to `get_running_loop`.
+- [x] **COMM-04** — Community embedding via FastEmbed — Phase: 11 — Status: Satisfied (VERIFICATION.md: 15-VERIFICATION.md)
+  - **Description:** Community summaries are embedded by calling `embed_texts([summary])` via `loop.run_in_executor`; the vector is stored as `summary_embedding` on the community record using the same FastEmbed model used for chunk embeddings. Phase 15 migrated `loop = asyncio.get_event_loop()` at line 52 to `asyncio.get_running_loop()`, eliminating the deprecated API usage.
   - **Definition of Done:**
     - `build_communities` uses `asyncio.get_running_loop()` not `get_event_loop()`.
   - **Verification criteria:**
     - `grep -n "embed_texts" src/docingest/services/community_detection.py` returns at least 1 match.
-    - `grep -n "get_running_loop" src/docingest/services/community_detection.py` returns at least 1 match (currently 0 — gap).
+    - `grep -n "get_running_loop" src/docingest/services/community_detection.py` returns at least 1 match.
+    - `grep -n "get_event_loop" src/docingest/services/community_detection.py` returns 0 matches.
 
 - [x] **COMM-05** — `POST /v1/graph/communities/rebuild` API route — Phase: 11 — Status: Satisfied* (traceability added, VERIFICATION.md pending)
   - **Description:** `POST /v1/graph/communities/rebuild` endpoint authenticated via the `Tenant` dependency (API key + rate limiting). Returns HTTP 403 when `settings.graph_rag_enabled` is False. Calls `build_communities(db, tenant["tenant_id"])` and returns `{"status": "ok", "communities": stats}`. Structured logs for rebuild start and complete. Router mounted in `app.py` under `/v1`; `ensure_graph_indexes` wired into lifespan when graph is enabled.
