@@ -51,7 +51,7 @@ Full detail: [milestones/v1.0.1-ROADMAP.md](milestones/v1.0.1-ROADMAP.md)
 
 ### v1.1 Graph Frontend (Phases 16-20)
 
-- [ ] **Phase 16: Graph Frontend APIs** - New backend endpoints for entity list/filter/search/detail, community list/detail, and graph-aware search
+- [x] **Phase 16: Graph Frontend APIs** - New backend endpoints for entity list/filter/search/detail, community list/detail, and graph-aware search (completed 2026-04-17)
 - [ ] **Phase 17: Document Graph Status** - Surface per-document graph build metadata (status badge, entity/relationship counts, last-built timestamp) in document list and detail views
 - [ ] **Phase 18: Entity Explorer** - New /entities page with paginated table, type filter, name search, and entity detail panel
 - [ ] **Phase 19: Community Browser** - New /communities page with hierarchical view, community detail panel, and rebuild action
@@ -71,9 +71,9 @@ Full detail: [milestones/v1.0.1-ROADMAP.md](milestones/v1.0.1-ROADMAP.md)
   3. `GET /v1/graph/communities` returns a paginated list of communities with resolution_level, entity_count, and summary
   4. `GET /v1/graph/communities/{id}` returns community detail with full summary and member entity list
   5. `POST /v1/graph/search` returns top-k communities by embedding similarity to a query string
-**Plans:** 1 plan
+**Plans:** 1/1 plans complete
 Plans:
-- [ ] 16-01-PLAN.md — DB helpers + 5 route handlers + Pydantic models + 14+ tests
+- [x] 16-01-PLAN.md — DB helpers + 5 route handlers + Pydantic models + 14+ tests
 **UI hint**: no
 
 ### Phase 17: Document Graph Status
@@ -144,7 +144,7 @@ Plans:
 | 13. Wire Graph Data Lifecycle Cleanup      | v1.0.1    | 1/1   | Complete    | 2026-04-16 |
 | 14. Surface Graph Status via Document API  | v1.0.1    | 1/1   | Complete    | 2026-04-17 |
 | 15. Graph RAG Code Quality & Hardening     | v1.0.1    | 1/1   | Complete    | 2026-04-17 |
-| 16. Graph Frontend APIs                    | v1.1      | 0/1   | Planned     | -          |
+| 16. Graph Frontend APIs                    | v1.1      | 1/1 | Complete   | 2026-04-17 |
 | 17. Document Graph Status                  | v1.1      | 0/TBD | Not started | -          |
 | 18. Entity Explorer                        | v1.1      | 0/TBD | Not started | -          |
 | 19. Community Browser                      | v1.1      | 0/TBD | Not started | -          |
