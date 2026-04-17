@@ -12,7 +12,7 @@ This file tracks the **Graph RAG extension** requirements delivered in phases 8-
 ## Coverage
 
 - **Total REQ-IDs:** 25
-- **Satisfied:** 16
+- **Satisfied:** 18
 - **Partial (gap closure in flight):** 5
 - **Orphaned (traceability only):** 4
 
@@ -176,7 +176,7 @@ This file tracks the **Graph RAG extension** requirements delivered in phases 8-
 
 ## Graph Builder Worker (Phase 10)
 
-- [x] **GRAPH-WORKER-01** — Document `graph_status` tracked through build stages — Phase: 10 — Status: Pending — Phase 14 (gap closure)
+- [x] **GRAPH-WORKER-01** — Document `graph_status` tracked through build stages — Phase: 10 — Status: Satisfied (VERIFICATION.md: 14-VERIFICATION.md)
   - **Description:** The graph-worker writes `graph_status` (building / complete / failed), `entity_count`, `relationship_count`, and `graph_built_at` to each document's MongoDB record as it progresses. The `Document` model carries these fields, but `_doc_to_response` in `documents.py` strips them from `DocumentResponse`, so API consumers (including the frontend) cannot see graph-build status per document.
   - **Definition of Done:**
     - `DocumentResponse` in `documents.py` includes `graph_status`, `entity_count`, `relationship_count`.
@@ -203,7 +203,7 @@ This file tracks the **Graph RAG extension** requirements delivered in phases 8-
   - **Verification criteria:**
     - `grep -n 'delete_doc_graph_data' src/docingest/api/routes/documents.py` returns at least 1 match in `reprocess_document` function (currently 0 — gap).
 
-- [x] **GRAPH-WORKER-04** — Worker writes `entity_count` and `relationship_count` surfaced via API — Phase: 10 — Status: Pending — Phase 14 (gap closure)
+- [x] **GRAPH-WORKER-04** — Worker writes `entity_count` and `relationship_count` surfaced via API — Phase: 10 — Status: Satisfied (VERIFICATION.md: 14-VERIFICATION.md)
   - **Description:** Shares the same root cause as GRAPH-WORKER-01: the worker writes the counts to the document record, but `_doc_to_response` in `documents.py` omits them. Consumers cannot see how rich a document's graph build was.
   - **Definition of Done:**
     - `DocumentResponse` in `documents.py` includes `entity_count` and `relationship_count`.
