@@ -62,8 +62,8 @@ Full detail: [.planning/milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md)
 **Goal:** Close code-quality and fragility debt items identified in the audit.
 **Requirements:** EE-08, COMM-01, COMM-02, COMM-03, COMM-04
 **Gap Closure:** INT-01 (duplicate `ensure_graph_indexes`), asyncio deprecation, `idx_to_entity` fragility, missing `ensure_collection` guard, v1 carryover (`configure_logging()` in converter/graph_builder).
-**Plans:** 1 plan
-- [ ] 15-01-PLAN.md — asyncio migration (3 sites), idx_to_entity id-keyed refactor, collection_exists helper + guard, INT-01 removal, tests + configure_logging verification
+**Plans:** 1/1 plans complete
+- [x] 15-01-PLAN.md — asyncio migration (3 sites), idx_to_entity id-keyed refactor, collection_exists helper + guard, INT-01 removal, tests + configure_logging verification
 
 ---
 

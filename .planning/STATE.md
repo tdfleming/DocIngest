@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: — MVP + Graph RAG Extension
-status: Ready to plan
-stopped_at: Completed 14-01-PLAN.md
-last_updated: "2026-04-17T02:34:43.050Z"
+status: Phase complete — ready for verification
+stopped_at: Completed 15-01-PLAN.md
+last_updated: "2026-04-17T12:55:02.312Z"
 progress:
   total_phases: 4
-  completed_phases: 3
-  total_plans: 6
-  completed_plans: 6
+  completed_phases: 4
+  total_plans: 7
+  completed_plans: 7
 ---
 
 # Project State
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-04)
 
 **Core value:** Documents go in, searchable vectorized chunks come out — reliably and tenant-isolated.
-**Current focus:** Phase 14 — surface-graph-status-via-document-api
+**Current focus:** Phase 15 — graph-rag-code-quality-hardening
 
 ## Current Position
 
-Phase: 15
-Plan: Not started
+Phase: 15 (graph-rag-code-quality-hardening) — EXECUTING
+Plan: 1 of 1
 
 ## Performance Metrics
 
@@ -61,6 +61,7 @@ Plan: Not started
 | Phase 12 P01 | 3min | 1 tasks | 1 files |
 | Phase 13 P01 | 13 | 3 tasks | 2 files |
 | Phase 14 P01 | 5 | 2 tasks | 3 files |
+| Phase 15 P01 | 4 | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -102,6 +103,10 @@ All v1 decisions documented in PROJECT.md Key Decisions table. All outcomes mark
 - [Phase 14]: D-05 honored: 4 graph fields always present on DocumentResponse regardless of graph_rag_enabled
 - [Phase 14]: D-11 honored: graph_built_at serialized with .isoformat() conditional on doc.get() for legacy doc safety
 - [Phase 14]: Single _doc_to_response mapper serves both GET /v1/documents/{id} and GET /v1/documents list (D-07)
+- [Phase 15]: D-01/02/03: asyncio.get_event_loop() migrated to get_running_loop() at 3 sites across entity_extraction.py and community_detection.py — correctness-preserving, zero behavioral change
+- [Phase 15]: D-04 through D-09: idx_to_entity (enumerate-based) replaced with entity_id_to_entity (id-keyed via graph vertex names) — removes hidden ordering invariant assumption in build_communities
+- [Phase 15]: D-10 through D-14: collection_exists() helper added to qdrant.py reusing _known_collections cache; _fetch_chunk_texts guards with it and returns [] on missing collection
+- [Phase 15]: D-15 through D-18: INT-01 closed — duplicate ensure_graph_indexes import and call removed from mongodb.py; app.py lifespan is sole canonical caller
 
 ### Pending Todos
 
@@ -113,6 +118,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-17T02:26:37.400Z
-Stopped at: Completed 14-01-PLAN.md
+Last session: 2026-04-17T12:55:02.306Z
+Stopped at: Completed 15-01-PLAN.md
 Resume with: Phase 11 complete. All community detection plans executed.
