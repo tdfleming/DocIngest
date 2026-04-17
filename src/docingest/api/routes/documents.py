@@ -90,6 +90,10 @@ class DocumentResponse(BaseModel):
     error_stage: str | None = None
     file_size_bytes: int = 0
     chunk_count: int
+    graph_status: str | None = None
+    entity_count: int = 0
+    relationship_count: int = 0
+    graph_built_at: str | None = None
     version: int
     created_at: str
     updated_at: str
@@ -129,6 +133,10 @@ def _doc_to_response(doc: dict) -> DocumentResponse:
         error_stage=doc.get("error_stage"),
         file_size_bytes=doc.get("file_size_bytes", 0),
         chunk_count=doc.get("chunk_count", 0),
+        graph_status=doc.get("graph_status"),
+        entity_count=doc.get("entity_count", 0),
+        relationship_count=doc.get("relationship_count", 0),
+        graph_built_at=doc["graph_built_at"].isoformat() if doc.get("graph_built_at") else None,
         version=doc.get("version", 1),
         created_at=doc["created_at"].isoformat(),
         updated_at=doc["updated_at"].isoformat(),

@@ -55,6 +55,7 @@ class Document(BaseModel):
     graph_status: str | None = None  # None | "building" | "complete" | "failed"
     entity_count: int = 0
     relationship_count: int = 0
+    graph_built_at: datetime | None = None
     version: int = 1
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
