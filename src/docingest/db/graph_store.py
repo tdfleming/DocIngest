@@ -5,6 +5,7 @@ as the first parameter, following the pattern established in mongodb.py.
 """
 
 import asyncio
+import re
 from datetime import UTC, datetime
 from typing import Any
 
@@ -159,10 +160,16 @@ async def upsert_relationship(
 
 
 async def get_entity_by_id(
-    db: AsyncIOMotorDatabase, entity_id: str
+    db: AsyncIOMotorDatabase, entity_id: str, tenant_id: str | None = None
 ) -> dict[str, Any] | None:
-    """Find a single entity by ObjectId. Returns dict or None."""
-    return await db.entities.find_one({"_id": ObjectId(entity_id)})
+    """Find a single entity by ObjectId. Returns dict or None.
+
+    If tenant_id is provided, includes it in the query for tenant-scope enforcement.
+    """
+    selector: dict[str, Any] = {"_id": ObjectId(entity_id)}
+    if tenant_id is not None:
+        selector["tenant_id"] = tenant_id
+    return await db.entities.find_one(selector)
 
 
 async def find_entities_by_names(
@@ -275,13 +282,19 @@ async def list_entities(
     db: AsyncIOMotorDatabase,
     tenant_id: str,
     entity_type: str | None = None,
+    q: str | None = None,
     page: int = 1,
     per_page: int = 50,
 ) -> tuple[list[dict[str, Any]], int]:
-    """Paginated entity listing. Returns (docs, total_count) tuple."""
+    """Paginated entity listing. Returns (docs, total_count) tuple.
+
+    Optional entity_type and q (name substring, case-insensitive) filters are AND-combined.
+    """
     query: dict[str, Any] = {"tenant_id": tenant_id}
     if entity_type:
         query["entity_type"] = entity_type
+    if q:
+        query["name"] = {"$regex": re.escape(q), "$options": "i"}
 
     total = await db.entities.count_documents(query)
     cursor = (
@@ -347,16 +360,48 @@ async def get_communities_by_level(
     ).to_list(length=None)
 
 
+async def list_communities(
+    db: AsyncIOMotorDatabase,
+    tenant_id: str,
+    level: int | None = None,
+    page: int = 1,
+    per_page: int = 50,
+) -> tuple[list[dict[str, Any]], int]:
+    """Paginated community listing with optional level filter. Returns (docs, total)."""
+    query: dict[str, Any] = {"tenant_id": tenant_id}
+    if level is not None:
+        query["level"] = level
+    total = await db.communities.count_documents(query)
+    cursor = (
+        db.communities.find(query)
+        .sort([("level", 1), ("title", 1)])
+        .skip((page - 1) * per_page)
+        .limit(per_page)
+    )
+    docs = await cursor.to_list(length=per_page)
+    return docs, total
+
+
+async def get_community_by_id(
+    db: AsyncIOMotorDatabase, community_id: str, tenant_id: str
+) -> dict[str, Any] | None:
+    """Find a single community by ObjectId with tenant scope enforcement."""
+    return await db.communities.find_one(
+        {"_id": ObjectId(community_id), "tenant_id": tenant_id}
+    )
+
+
 async def search_communities_by_embedding(
     db: AsyncIOMotorDatabase,
     tenant_id: str,
     query_embedding: list[float],
     limit: int = 5,
-) -> list[dict[str, Any]]:
+) -> list[tuple[float, dict[str, Any]]]:
     """Search communities by cosine similarity using Python-side numpy computation.
 
     Fetches all communities with summary_embedding for the tenant and ranks them.
     Suitable for small community counts (< 1000 per tenant).
+    Returns list of (score, community_dict) tuples sorted by score descending.
     """
     communities = await db.communities.find(
         {"tenant_id": tenant_id, "summary_embedding": {"$exists": True, "$ne": None}},
@@ -368,7 +413,7 @@ async def search_communities_by_embedding(
     query_vec = np.array(query_embedding)
     query_norm = np.linalg.norm(query_vec)
     if query_norm == 0:
-        return communities[:limit]
+        return [(0.0, comm) for comm in communities[:limit]]
 
     scored: list[tuple[float, dict[str, Any]]] = []
     for comm in communities:
@@ -381,7 +426,7 @@ async def search_communities_by_embedding(
         scored.append((similarity, comm))
 
     scored.sort(key=lambda x: x[0], reverse=True)
-    return [comm for _, comm in scored[:limit]]
+    return scored[:limit]
 
 
 async def delete_doc_graph_data(

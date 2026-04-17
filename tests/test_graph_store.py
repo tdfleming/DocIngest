@@ -250,7 +250,10 @@ async def test_search_communities_by_embedding(db):
         db, TENANT, [1.0, 0.0, 0.0], limit=1
     )
     assert len(results) == 1
-    assert results[0]["title"] == "Tech"
+    score, comm = results[0]
+    assert comm["title"] == "Tech"
+    assert isinstance(score, float)
+    assert score > 0.0
 
 
 # --- delete_doc_graph_data ---
