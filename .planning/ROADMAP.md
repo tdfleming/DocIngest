@@ -1,72 +1,78 @@
 # Roadmap: DocIngest
 
-**Current milestone:** v1.0 (gap closure in progress — see `.planning/v1.0-MILESTONE-AUDIT.md`)
-**Last updated:** 2026-04-16
+**Current milestone:** None (v1.0.1 shipped 2026-04-17)
+**Last updated:** 2026-04-17
 
 ---
 
-## Milestone v1.0 — MVP + Graph RAG Extension
+## Milestones
 
-**Status:** ⚠ Gap closure — 4 phases added on 2026-04-16 to close gaps identified by milestone audit.
+- ✅ **v1.0 MVP** — Phases 1-7 (shipped 2026-03-04)
+- ✅ **v1.0.1 Graph RAG Extension** — Phases 8-15 (shipped 2026-04-17)
+- 📋 **vNext** — TBD
 
-### Original MVP (shipped 2026-03-04)
+---
 
-| Phase | Name | Status |
-|-------|------|--------|
-| 01 | Foundation & Infrastructure | ✅ shipped |
-| 02 | Document Parsing | ✅ shipped |
-| 03 | Chunking & Embedding | ✅ shipped |
-| 04 | Search & Document Management | ✅ shipped |
-| 05 | Auth & Multi-Tenancy | ✅ shipped |
-| 06 | Reliability & Observability | ✅ shipped |
-| 07 | Tech Debt Cleanup | ✅ shipped |
+## Phases
 
-Full detail: [.planning/milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md)
+<details>
+<summary>✅ v1.0 MVP (Phases 1-7) — SHIPPED 2026-03-04</summary>
 
-### Graph RAG Extension (added after v1.0 ship, 2026-04-12)
+- [x] Phase 01: Foundation & Infrastructure (1/1 plans)
+- [x] Phase 02: Document Parsing (1/1 plans)
+- [x] Phase 03: Chunking & Embedding (1/1 plans)
+- [x] Phase 04: Search & Document Management (1/1 plans)
+- [x] Phase 05: Auth & Multi-Tenancy (1/1 plans)
+- [x] Phase 06: Reliability & Observability (2/2 plans)
+- [x] Phase 07: Tech Debt Cleanup (1/1 plans)
 
-| Phase | Name | Status |
-|-------|------|--------|
-| 08 | Graph Data Models | ✅ wired, ⚠ VERIFICATION.md missing |
-| 09 | Entity Extraction | ✅ wired, ⚠ VERIFICATION.md missing |
-| 10 | Graph Builder Worker | ✅ wired, ⚠ SUMMARY frontmatter + VERIFICATION.md missing |
-| 11 | Community Detection | ✅ wired, ⚠ SUMMARY frontmatter + VERIFICATION.md missing |
+Full detail: [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md)
 
-### Gap Closure (added 2026-04-16)
+</details>
 
-#### Phase 12: Restore Graph RAG Traceability
-**Goal:** Establish formal traceability for the Graph RAG extension (REQUIREMENTS.md, ROADMAP.md, PROJECT.md, MILESTONES.md, SUMMARY frontmatter).
-**Requirements:** GRAPH-WORKER-02, GRAPH-WORKER-05, COMM-05 (orphaned/frontmatter) + planning-artifact gaps
-**Gap Closure:** Structural pre-requisite for all other gap closure phases; closes planning-artifact gaps surfaced by audit.
-**Plans:** 4/4 plans complete
-- [x] 12-01-PLAN.md — Expand REQUIREMENTS.md with full 25-entry schema + flip GRAPH-WORKER-02/05 and COMM-05 to Satisfied*
-- [x] 12-02-PLAN.md — Update PROJECT.md (remove Graph RAG from Out-of-Scope, add v1.0 extension entries, bump date)
-- [x] 12-03-PLAN.md — Append v1.0 Graph RAG Extension block to MILESTONES.md
-- [x] 12-04-PLAN.md — Add requirements-completed frontmatter to 10-01, 11-01, 11-02 SUMMARYs
+<details>
+<summary>✅ v1.0.1 Graph RAG Extension (Phases 8-15) — SHIPPED 2026-04-17</summary>
 
-#### Phase 13: Wire Graph Data Lifecycle Cleanup
-**Goal:** Delete and reprocess document routes must synchronously clean up graph data before the graph-worker can re-enter.
-**Requirements:** GRAPH-06, GRAPH-WORKER-03
-**Gap Closure:** FLOW-06 (delete leaves orphaned graph data permanently), FLOW-04 (reprocess stale-data window).
-**Plans:** 1/1 plans complete
-- [x] 13-01-PLAN.md — Wire delete_doc_graph_data into delete_document_route and reprocess_document with lenient error handling + integration/unit tests
+**Build phases (feature):**
+- [x] Phase 08: Graph Data Models (2/2 plans)
+- [x] Phase 09: Entity Extraction (1/1 plans)
+- [x] Phase 10: Graph Builder Worker (1/1 plans)
+- [x] Phase 11: Community Detection (2/2 plans)
 
-#### Phase 14: Surface Graph Status via Document API
-**Goal:** Graph processing fields written by the worker must be visible on `GET /v1/documents/{id}` and list responses.
-**Requirements:** GRAPH-WORKER-01, GRAPH-WORKER-04
-**Gap Closure:** INT-02 (`graph_status`, `entity_count`, `relationship_count` stripped by `_doc_to_response`).
-**Plans:** 1/1 plans complete
-- [x] 14-01-PLAN.md — Add graph_built_at to Document model, extend DocumentResponse + _doc_to_response with 4 graph fields, integration tests
+**Gap closure phases (audit-driven):**
+- [x] Phase 12: Restore Graph RAG Traceability (4/4 plans) — REQUIREMENTS/PROJECT/MILESTONES/SUMMARY docs
+- [x] Phase 13: Wire Graph Data Lifecycle Cleanup (1/1 plans) — closed FLOW-04/FLOW-06
+- [x] Phase 14: Surface Graph Status via Document API (1/1 plans) — closed INT-02
+- [x] Phase 15: Graph RAG Code Quality & Hardening (1/1 plans) — closed INT-01, EE-08, COMM-01..04
 
-#### Phase 15: Graph RAG Code Quality & Hardening
-**Goal:** Close code-quality and fragility debt items identified in the audit.
-**Requirements:** EE-08, COMM-01, COMM-02, COMM-03, COMM-04
-**Gap Closure:** INT-01 (duplicate `ensure_graph_indexes`), asyncio deprecation, `idx_to_entity` fragility, missing `ensure_collection` guard, v1 carryover (`configure_logging()` in converter/graph_builder).
-**Plans:** 1/1 plans complete
-- [x] 15-01-PLAN.md — asyncio migration (3 sites), idx_to_entity id-keyed refactor, collection_exists helper + guard, INT-01 removal, tests + configure_logging verification
+Full detail: [milestones/v1.0.1-ROADMAP.md](milestones/v1.0.1-ROADMAP.md)
+
+</details>
 
 ---
 
 ## Next Milestone
 
-TBD — evaluate after v1.0 gap closure completes and re-audits clean.
+TBD — run `/gsd:new-milestone` to scope the next release.
+
+---
+
+## Progress
+
+| Phase                                      | Milestone | Plans | Status   | Completed  |
+|--------------------------------------------|-----------|-------|----------|------------|
+| 01. Foundation & Infrastructure            | v1.0      | 1/1   | Complete | 2026-03-03 |
+| 02. Document Parsing                       | v1.0      | 1/1   | Complete | 2026-03-03 |
+| 03. Chunking & Embedding                   | v1.0      | 1/1   | Complete | 2026-03-03 |
+| 04. Search & Document Management           | v1.0      | 1/1   | Complete | 2026-03-03 |
+| 05. Auth & Multi-Tenancy                   | v1.0      | 1/1   | Complete | 2026-03-04 |
+| 06. Reliability & Observability            | v1.0      | 2/2   | Complete | 2026-03-04 |
+| 07. Tech Debt Cleanup                      | v1.0      | 1/1   | Complete | 2026-03-04 |
+| 08. Graph Data Models                      | v1.0.1    | 2/2   | Complete | 2026-04-12 |
+| 09. Entity Extraction                      | v1.0.1    | 1/1   | Complete | 2026-04-12 |
+| 10. Graph Builder Worker                   | v1.0.1    | 1/1   | Complete | 2026-04-12 |
+| 11. Community Detection                    | v1.0.1    | 2/2   | Complete | 2026-04-12 |
+| 12. Restore Graph RAG Traceability         | v1.0.1    | 4/4   | Complete | 2026-04-16 |
+| 13. Wire Graph Data Lifecycle Cleanup      | v1.0.1    | 1/1   | Complete | 2026-04-16 |
+| 14. Surface Graph Status via Document API  | v1.0.1    | 1/1   | Complete | 2026-04-17 |
+| 15. Graph RAG Code Quality & Hardening     | v1.0.1    | 1/1   | Complete | 2026-04-17 |

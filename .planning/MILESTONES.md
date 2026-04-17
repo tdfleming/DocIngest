@@ -28,16 +28,25 @@
 
 **Delivered:** Knowledge-graph pipeline layered onto v1.0 MVP — spaCy-based entity/relationship extraction over chunked content, MongoDB graph store with tenant isolation, and on-demand Leiden community detection with TF-IDF summaries. All functionality gated by `GRAPH_RAG_ENABLED`.
 
-**Phases:** 8-11 (7 plans)
+**Phases:** 8-15 (12 plans)
 **Requirements declared:** 25 (GRAPH-01..07, EE-01..08, GRAPH-WORKER-01..05, COMM-01..05)
-**Status:** ⚠ Gap closure in flight (phases 12-15) — see `.planning/v1.0-MILESTONE-AUDIT.md`.
+**Status:** ✅ Shipped 2026-04-17 as v1.0.1 — all 25 REQ-IDs Satisfied, all audit gaps closed.
+
+**Build phases (8-11):** Graph data models, entity extraction service, graph builder worker, community detection + API.
+**Gap closure phases (12-15):**
+- Phase 12 — Traceability (REQUIREMENTS.md, PROJECT.md, MILESTONES.md, SUMMARY frontmatter)
+- Phase 13 — Wire synchronous graph cleanup into delete/reprocess routes (closed FLOW-04/FLOW-06)
+- Phase 14 — Surface `graph_status`, `entity_count`, `relationship_count`, `graph_built_at` via DocumentResponse (closed INT-02)
+- Phase 15 — Code quality & hardening: asyncio API migration, `idx_to_entity` robustness, `collection_exists` guard, INT-01 duplicate-call removal
 
 **Stats:**
 - graph-worker: new ARQ worker with dedicated queue (`arq:queue:graph`)
 - New services: `entity_extraction`, `community_detection`
 - New models: Entity, Relationship, Community
 - New dependencies: spaCy (`en_core_web_lg`), python-igraph, leidenalg, scikit-learn
+- Python LOC: 4,586 (up from 2,118 at v1.0 MVP)
 
-**Git range:** `85e5a0e` (v1.0 ship) → `479736f` (gap closure phases added)
+**Git range:** `85e5a0e` (v1.0 ship) → v1.0.1 tag (today)
+**Archives:** [milestones/v1.0.1-ROADMAP.md](milestones/v1.0.1-ROADMAP.md), [milestones/v1.0.1-REQUIREMENTS.md](milestones/v1.0.1-REQUIREMENTS.md)
 
 ---

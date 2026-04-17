@@ -1,30 +1,30 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: — MVP + Graph RAG Extension
-status: Milestone complete
-stopped_at: Completed 15-01-PLAN.md
-last_updated: "2026-04-17T13:03:26.409Z"
+milestone: v1.0.1
+milestone_name: — Graph RAG Extension (shipped)
+status: Milestone complete — awaiting next milestone
+stopped_at: v1.0.1 shipped 2026-04-17
+last_updated: "2026-04-17T13:30:00.000Z"
 progress:
-  total_phases: 4
-  completed_phases: 4
-  total_plans: 7
-  completed_plans: 7
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-03-04)
+See: .planning/PROJECT.md (updated 2026-04-17)
 
 **Core value:** Documents go in, searchable vectorized chunks come out — reliably and tenant-isolated.
-**Current focus:** Phase 15 — graph-rag-code-quality-hardening
+**Current focus:** Planning next milestone — run `/gsd:new-milestone`
 
 ## Current Position
 
-Phase: 15
-Plan: Not started
+Milestone: v1.0.1 Graph RAG Extension shipped (2026-04-17)
+Next: awaiting `/gsd:new-milestone` invocation
 
 ## Performance Metrics
 
@@ -67,46 +67,7 @@ Plan: Not started
 
 ### Decisions
 
-All v1 decisions documented in PROJECT.md Key Decisions table. All outcomes marked Good.
-
-- [08-01] Followed exact document.py model pattern for graph models (StrEnum, BaseModel, Field alias, populate_by_name)
-- [08-01] Entity embedding stored as optional list[float] for flexible vector dimensions
-- [08-01] Community hierarchy uses parent_community_id + child_community_ids for bidirectional traversal
-- [08-02] Used two-step query for 1-hop neighbors, $graphLookup for multi-hop traversal
-- [08-02] Python-side cosine similarity with numpy for community search (no $vectorSearch on MongoDB 7)
-- [08-02] Conditional graph index creation gated by settings.graph_rag_enabled
-- [09-01] Followed embedding.py lazy-load + threading.Lock pattern for spaCy model singleton
-- [09-01] Filter out EntityType.OTHER entities by default to reduce graph noise
-- [09-01] SVO extraction requires BOTH source and target in entity list (strict filtering)
-- [09-01] Used stdlib difflib.SequenceMatcher for fuzzy matching (no extra dependency)
-- [10-01] graph_status is a plain str|None, not a DocumentStatus enum, to avoid breaking frontend/API
-- [10-01] Batch entity resolution: single find_entities_by_names call, then local resolve_entity
-- [10-01] 1 replica for graph-worker due to ~500MB RAM per spaCy process
-- [10-01] graph-worker depends on mongodb/redis/qdrant only (no minio)
-- [11-01] CPMVertexPartition for resolution-parameterized Leiden hierarchy
-- [11-01] Edge dedup by (min,max) pair with weight summing for undirected graph
-- [11-01] Parent/child linking by maximum entity overlap across adjacent levels
-- [11-02] All community detection test classes need igraph skipif guard due to module-level import
-- [11-02] Graph API returns 403 when graph_rag_enabled is false (authorization semantics)
-- [11-02] Conditional ensure_graph_indexes in lifespan gated by graph_rag_enabled
-- [Phase 12]: [12-03] Graph RAG recorded as ### subsection inside v1.0 MVP block, not a new top-level milestone heading
-- [Phase 12]: [12-02] Applied four targeted Edit operations to PROJECT.md (not full rewrite) to remove Graph RAG from Out-of-Scope and add v1.0 extension Validated entries
-- [Phase 12-graph-rag-traceability]: [12-04] SUMMARY frontmatter reflects what was delivered by the plan, not the audit verdict — nuance belongs in REQUIREMENTS.md Status field
-- [Phase 12-graph-rag-traceability]: [12-04] COMM-04 recorded in 11-01-SUMMARY (where build_communities embedding shipped), not 11-02, intentionally diverging from 11-02-PLAN.md requirements declaration
-- [Phase 12]: [12-02] Used 'v1.0 extension' suffix on new Validated entries to distinguish from original 13 MVP bullets
-- [Phase 12]: [12-02] Did NOT touch Key Decisions table or Active section per 12-CONTEXT.md lock (those facts live elsewhere)
-- [Phase 12]: [12-01] Expanded REQUIREMENTS.md with all 25 Graph RAG REQ-IDs (Description, DoD, Verification criteria); flipped 3 orphaned REQ-IDs (GRAPH-WORKER-02/05, COMM-05) to Satisfied*
-- [Phase 13]: D-01/D-02: Gate at call site with if settings.graph_rag_enabled — NOT inside the helper, matching graph_builder.py pattern
-- [Phase 13]: D-03/D-04: Lenient error mode — graph_cleanup_failed logged with doc_id/tenant_id/error, route still returns 200/202
-- [Phase 13]: D-07/D-09: Graph cleanup order: graph first, then Qdrant chunks, then blobs, then MongoDB document record
-- [Phase 13]: D-12/D-13: graph_builder.py:119-121 safety net preserved untouched — defense-in-depth for races and non-route enqueues
-- [Phase 14]: D-05 honored: 4 graph fields always present on DocumentResponse regardless of graph_rag_enabled
-- [Phase 14]: D-11 honored: graph_built_at serialized with .isoformat() conditional on doc.get() for legacy doc safety
-- [Phase 14]: Single _doc_to_response mapper serves both GET /v1/documents/{id} and GET /v1/documents list (D-07)
-- [Phase 15]: D-01/02/03: asyncio.get_event_loop() migrated to get_running_loop() at 3 sites across entity_extraction.py and community_detection.py — correctness-preserving, zero behavioral change
-- [Phase 15]: D-04 through D-09: idx_to_entity (enumerate-based) replaced with entity_id_to_entity (id-keyed via graph vertex names) — removes hidden ordering invariant assumption in build_communities
-- [Phase 15]: D-10 through D-14: collection_exists() helper added to qdrant.py reusing _known_collections cache; _fetch_chunk_texts guards with it and returns [] on missing collection
-- [Phase 15]: D-15 through D-18: INT-01 closed — duplicate ensure_graph_indexes import and call removed from mongodb.py; app.py lifespan is sole canonical caller
+All v1.0 MVP and v1.0.1 Graph RAG Extension decisions documented in PROJECT.md Key Decisions table. All outcomes marked ✓ Good. Per-phase details archived in `.planning/milestones/v1.0-ROADMAP.md` and `.planning/milestones/v1.0.1-ROADMAP.md`. Retrospective at `.planning/RETROSPECTIVE.md`.
 
 ### Pending Todos
 
@@ -118,6 +79,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-17T12:55:02.306Z
-Stopped at: Completed 15-01-PLAN.md
-Resume with: Phase 11 complete. All community detection plans executed.
+Last session: 2026-04-17
+Stopped at: v1.0.1 milestone archived and shipped.
+Resume with: `/gsd:new-milestone` to scope the next release.
