@@ -24,38 +24,38 @@ This file tracks the **v1.1 Graph Frontend** milestone only. v1.1 adds frontend 
 
 Surface the per-document graph build fields already returned by the v1.0.1 API.
 
-- [ ] **DOC-GRAPH-01** — Document list shows graph status badge — Phase: TBD — Status: Pending
-- [ ] **DOC-GRAPH-02** — Document list shows entity and relationship counts (compact) — Phase: TBD — Status: Pending
-- [ ] **DOC-GRAPH-03** — Document detail page shows full graph build metadata (status, counts, last-built timestamp, error if any) — Phase: TBD — Status: Pending
-- [ ] **DOC-GRAPH-04** — Graph UI is gated: hides graph columns/sections when the `graph_status` field is `null` for all documents (signals `GRAPH_RAG_ENABLED=false` on backend) — Phase: TBD — Status: Pending
+- [ ] **DOC-GRAPH-01** — Document list shows graph status badge — Phase: 17 — Status: Pending
+- [ ] **DOC-GRAPH-02** — Document list shows entity and relationship counts (compact) — Phase: 17 — Status: Pending
+- [ ] **DOC-GRAPH-03** — Document detail page shows full graph build metadata (status, counts, last-built timestamp, error if any) — Phase: 17 — Status: Pending
+- [ ] **DOC-GRAPH-04** — Graph UI is gated: hides graph columns/sections when the `graph_status` field is `null` for all documents (signals `GRAPH_RAG_ENABLED=false` on backend) — Phase: 17 — Status: Pending
 
 ## Entity Explorer (Category: ENT)
 
 New page / view for browsing entities extracted across a tenant.
 
-- [ ] **ENT-01** — Entity list page (`/entities`) with paginated table: name, entity_type, mention_count, doc_count — Phase: TBD — Status: Pending
-- [ ] **ENT-02** — Filter entities by type (dropdown / multi-select using EntityType enum values) — Phase: TBD — Status: Pending
-- [ ] **ENT-03** — Search entities by name (substring match, server-side) — Phase: TBD — Status: Pending
-- [ ] **ENT-04** — Entity detail view shows linked documents (clickable back to `/documents/{id}`) — Phase: TBD — Status: Pending
-- [ ] **ENT-05** — Backend API endpoints for list/filter/search/detail — new `/v1/graph/entities` endpoints backing the UI — Phase: TBD — Status: Pending
+- [ ] **ENT-01** — Entity list page (`/entities`) with paginated table: name, entity_type, mention_count, doc_count — Phase: 18 — Status: Pending
+- [ ] **ENT-02** — Filter entities by type (dropdown / multi-select using EntityType enum values) — Phase: 18 — Status: Pending
+- [ ] **ENT-03** — Search entities by name (substring match, server-side) — Phase: 18 — Status: Pending
+- [ ] **ENT-04** — Entity detail view shows linked documents (clickable back to `/documents/{id}`) — Phase: 18 — Status: Pending
+- [ ] **ENT-05** — Backend API endpoints for list/filter/search/detail — new `/v1/graph/entities` endpoints backing the UI — Phase: 16 — Status: Pending
 
 ## Community Browser (Category: COMM-UI)
 
 List, inspect, and rebuild communities from the frontend.
 
-- [ ] **COMM-UI-01** — Community list page (`/communities`) with paginated table: title, resolution_level, size (entity_count), summary preview — Phase: TBD — Status: Pending
-- [ ] **COMM-UI-02** — Hierarchical view — expand parent communities to show child communities at finer resolutions — Phase: TBD — Status: Pending
-- [ ] **COMM-UI-03** — Community detail panel shows full summary, member entities (linked), resolution level — Phase: TBD — Status: Pending
-- [ ] **COMM-UI-04** — Rebuild action — button triggers `POST /v1/graph/communities/rebuild` with loading state; shows toast on success with stats; shows last-rebuild timestamp — Phase: TBD — Status: Pending
-- [ ] **COMM-UI-05** — Backend API endpoints for list/detail — new `/v1/graph/communities` GET endpoints backing the UI — Phase: TBD — Status: Pending
+- [ ] **COMM-UI-01** — Community list page (`/communities`) with paginated table: title, resolution_level, size (entity_count), summary preview — Phase: 19 — Status: Pending
+- [ ] **COMM-UI-02** — Hierarchical view — expand parent communities to show child communities at finer resolutions — Phase: 19 — Status: Pending
+- [ ] **COMM-UI-03** — Community detail panel shows full summary, member entities (linked), resolution level — Phase: 19 — Status: Pending
+- [ ] **COMM-UI-04** — Rebuild action — button triggers `POST /v1/graph/communities/rebuild` with loading state; shows toast on success with stats; shows last-rebuild timestamp — Phase: 19 — Status: Pending
+- [ ] **COMM-UI-05** — Backend API endpoints for list/detail — new `/v1/graph/communities` GET endpoints backing the UI — Phase: 16 — Status: Pending
 
 ## Graph-Aware Search (Category: SEARCH-G)
 
 Extend the existing search page to optionally surface community summaries alongside chunk matches.
 
-- [ ] **SEARCH-G-01** — Toggle on search page: "Include community context" — when on, search results UI includes a top-matches-by-community section above chunk results — Phase: TBD — Status: Pending
-- [ ] **SEARCH-G-02** — Each community match shows: title, summary (truncated with expand), resolution level, linked member entities — Phase: TBD — Status: Pending
-- [ ] **SEARCH-G-03** — Backend endpoint: new `/v1/graph/search` (or extension of existing `/v1/search` with a `include_communities` flag) returning top-k communities by embedding similarity to query — Phase: TBD — Status: Pending
+- [ ] **SEARCH-G-01** — Toggle on search page: "Include community context" — when on, search results UI includes a top-matches-by-community section above chunk results — Phase: 20 — Status: Pending
+- [ ] **SEARCH-G-02** — Each community match shows: title, summary (truncated with expand), resolution level, linked member entities — Phase: 20 — Status: Pending
+- [ ] **SEARCH-G-03** — Backend endpoint: new `/v1/graph/search` (or extension of existing `/v1/search` with a `include_communities` flag) returning top-k communities by embedding similarity to query — Phase: 16 — Status: Pending
 
 ---
 
@@ -73,10 +73,25 @@ Extend the existing search page to optionally surface community summaries alongs
 
 ## Traceability
 
-(Filled by gsd-roadmapper — maps each REQ-ID to the phase that delivers it.)
-
 | REQ-ID | Phase | Status |
 |---|---|---|
+| DOC-GRAPH-01 | Phase 17 | Pending |
+| DOC-GRAPH-02 | Phase 17 | Pending |
+| DOC-GRAPH-03 | Phase 17 | Pending |
+| DOC-GRAPH-04 | Phase 17 | Pending |
+| ENT-01 | Phase 18 | Pending |
+| ENT-02 | Phase 18 | Pending |
+| ENT-03 | Phase 18 | Pending |
+| ENT-04 | Phase 18 | Pending |
+| ENT-05 | Phase 16 | Pending |
+| COMM-UI-01 | Phase 19 | Pending |
+| COMM-UI-02 | Phase 19 | Pending |
+| COMM-UI-03 | Phase 19 | Pending |
+| COMM-UI-04 | Phase 19 | Pending |
+| COMM-UI-05 | Phase 16 | Pending |
+| SEARCH-G-01 | Phase 20 | Pending |
+| SEARCH-G-02 | Phase 20 | Pending |
+| SEARCH-G-03 | Phase 16 | Pending |
 
 ---
 
