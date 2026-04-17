@@ -32,7 +32,25 @@ Documents go in, searchable vectorized chunks come out — reliably and tenant-i
 
 ### Active
 
-(None yet — define requirements for next milestone via `/gsd:new-milestone`)
+## Current Milestone: v1.1 Graph Frontend
+
+**Goal:** Surface the v1.0.1 Graph RAG backend capabilities through the React frontend — give users visibility into graph build status, entities, communities, and graph-aware search.
+
+**Target features:**
+- Per-document graph status (surface `graph_status`, `entity_count`, `relationship_count`, `graph_built_at` on document list + detail)
+- Entity explorer (browse entities with filter/search by type, mention count, linked documents)
+- Community browser with rebuild action (list/search communities with summaries, multi-resolution hierarchy, button to trigger `POST /v1/graph/communities/rebuild`)
+- Graph-aware search (extend search UI to optionally include community summaries alongside chunks)
+
+**Explicit non-goals (defer to v1.2+):**
+- Interactive graph visualization (force-directed node-link diagrams)
+- High-polish animations / custom viz widgets
+- Admin toggle for `GRAPH_RAG_ENABLED` (server restart required today)
+
+**Stack & context:**
+- React 18 + TypeScript + Vite + Chakra UI v2 + TanStack Query + Axios + React Router v6
+- Backend already exposes all required fields and endpoints (shipped in v1.0.1 phases 11, 14)
+- Polish level: MVP Chakra defaults (iterate later based on user feedback)
 
 ### Out of Scope
 
@@ -109,4 +127,4 @@ Extended with Graph RAG pipeline post-ship (phases 8-11, 2026-04-12): entity/rel
 | Id-keyed lookup via `graph.vs[m]["name"]` | Robust against entity list reordering | ✓ Good — v1.0.1 |
 
 ---
-*Last updated: 2026-04-17 after v1.0.1 Graph RAG Extension shipped*
+*Last updated: 2026-04-17 — v1.1 Graph Frontend milestone started*
