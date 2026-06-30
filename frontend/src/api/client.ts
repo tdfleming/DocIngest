@@ -22,12 +22,21 @@ client.interceptors.request.use((config) => {
 client.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (
-      error.response?.status === 401 &&
-      error.config?.url !== "/auth/login" &&
-      error.config?.url !== "/auth/status" &&
-      error.config?.url !== "/auth/me"
-    ) {
+    // The app has two independent auth schemes: JWT (Authorization: Bearer) for
+    // /auth/* endpoints, and the API key (X-API-Key) for documents/search/graph.
+    // Only a 401 from a JWT endpoint means the login session expired — that's the
+    // only case where we should drop the JWT and bounce to /login. A 401 from an
+    // API-key endpoint just means the stored API key is missing/invalid and must
+    // NOT tear down a valid login session. (/auth/login, /auth/status, /auth/me
+    // legitimately 401 during the unauthenticated boot probe, so exclude them.)
+    const url: string = error.config?.url ?? "";
+    const isJwtSessionEndpoint =
+      url.startsWith("/auth/") &&
+      url !== "/auth/login" &&
+      url !== "/auth/status" &&
+      url !== "/auth/me";
+
+    if (error.response?.status === 401 && isJwtSessionEndpoint) {
       localStorage.removeItem(JWT_STORAGE_KEY);
       window.location.href = "/login";
     }
