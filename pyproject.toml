@@ -3,6 +3,8 @@ name = "docingest"
 version = "0.1.0"
 description = "Multi-tenant document ingestion engine for RAG and semantic search"
 requires-python = ">=3.12"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
 dependencies = [
     # API
     "fastapi>=0.115,<1",

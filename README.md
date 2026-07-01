@@ -379,4 +379,8 @@ See the [Hardware Requirements](#hardware-requirements) section for GPU sizing g
 
 ## License
 
-Proprietary.
+Apache License 2.0. See [LICENSE](LICENSE) and [NOTICE](NOTICE).
+
+The self-hosted core is open source under Apache-2.0. Managed cloud hosting,
+SSO/SAML, audit logging, usage metering, and HA/Kubernetes deployment are
+offered separately as part of the DocIngest cloud/enterprise tier.

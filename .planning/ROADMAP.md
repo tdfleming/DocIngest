@@ -10,6 +10,7 @@
 - ✅ **v1.0 MVP** — Phases 1-7 (shipped 2026-03-04)
 - ✅ **v1.0.1 Graph RAG Extension** — Phases 8-15 (shipped 2026-04-17)
 - 🚧 **v1.1 Graph Frontend** — Phases 16-20
+- 📋 **v1.2 Product Completeness** — Phases 21+ (proposed; from 2026-06-30 market/product evaluation)
 
 ---
 
@@ -56,6 +57,17 @@ Full detail: [milestones/v1.0.1-ROADMAP.md](milestones/v1.0.1-ROADMAP.md)
 - [ ] **Phase 18: Entity Explorer** - New /entities page with paginated table, type filter, name search, and entity detail panel
 - [ ] **Phase 19: Community Browser** - New /communities page with hierarchical view, community detail panel, and rebuild action
 - [ ] **Phase 20: Graph-Aware Search** - Extend search page with community context toggle that surfaces top matching communities above chunk results
+
+### v1.2 Product Completeness (Phases 21+) — proposed
+
+Driven by the 2026-06-30 market/product evaluation (Outline → DocIngest → "Market & Product Evaluation"). GTM decision: **open-core (Apache-2.0) + paid cloud**. Priority-ordered gap closure toward a launchable OSS product.
+
+- [ ] **Phase 21: Connector Framework** - Pluggable source connectors (S3, Web Crawl, Google Drive) feeding the existing ingest pipeline with incremental sync + deletion propagation — see [21-connector-framework/21-CONTEXT.md](phases/21-connector-framework/21-CONTEXT.md)
+- [ ] _Proposed:_ Sub-5-min quickstart (slim/CPU image) · OCR / scanned PDFs · retrieval eval harness + published benchmark · LangChain/LlamaIndex retriever adapter + Python/TS SDK
+
+Cloud/enterprise tier (metering, SSO/SAML, audit logs, SOC2, HA/K8s) is tracked separately as the paid layer, not part of the OSS core.
+
+**Relicensed to Apache-2.0** (2026-06-30): `LICENSE` + `NOTICE` added; `pyproject.toml` and `README.md` updated. Copyright © Maetek Technologies.
 
 ---
 
