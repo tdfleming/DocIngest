@@ -12,6 +12,10 @@ Point DocIngest at a PDF, DOCX, HTML, TXT, or Markdown file and it converts to c
 docker compose up --build        # full stack, batteries included
 ```
 
+<p align="center">
+  <img src="docs/assets/docingest-pipeline.svg" alt="DocIngest pipeline: upload to convert to chunk to embed to store to search, with an optional knowledge-graph branch" width="100%">
+</p>
+
 - **[Quick Start](#quick-start)** · **[Why DocIngest](#why-docingest)** · **[API](#api-endpoints)** · **[Graph RAG](#graph-rag-optional)** · **[Deployment](#deployment)** · **[Configuration](#configuration)**
 
 ## Why DocIngest
