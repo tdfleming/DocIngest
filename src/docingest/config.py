@@ -14,6 +14,9 @@ class Settings(BaseSettings):
     # FastEmbed (local embeddings)
     fastembed_model: str = "BAAI/bge-small-en-v1.5"
 
+    # Reranking (local cross-encoder, ONNX via FastEmbed)
+    reranker_model: str = "Xenova/ms-marco-MiniLM-L-6-v2"
+
     # MongoDB
     mongodb_uri: str = "mongodb://mongodb:27017"
     mongodb_database: str = "docingest"
