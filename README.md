@@ -1,17 +1,44 @@
 # DocIngest
 
-Multi-tenant document ingestion engine that converts documents into semantically chunked, vectorized content for RAG and semantic search.
+**The open-source ingestion backend for RAG.** Drop-in, multi-tenant: document → clean Markdown → semantic chunks → vectors → knowledge graph. Self-host it free, or run it managed. Own your data, own your pipeline.
 
-Upload a PDF, DOCX, HTML, TXT, or Markdown file and DocIngest will convert it to clean Markdown, split it into semantic chunks, generate embeddings, and store everything in a vector database ready for search.
+[![CI](https://github.com/tdfleming/DocIngest/actions/workflows/ci.yml/badge.svg)](https://github.com/tdfleming/DocIngest/actions/workflows/ci.yml)
+[![License: Apache 2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
+[![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-blue.svg)](https://www.python.org/)
+
+Point DocIngest at a PDF, DOCX, HTML, TXT, or Markdown file and it converts to clean Markdown, splits into semantic chunks, generates embeddings locally (no API keys), stores them in Qdrant, and — optionally — extracts an entity/relationship knowledge graph. Every layer is tenant-isolated. Run the whole stack with one `docker compose up` or `helm install`.
+
+```bash
+docker compose up --build        # full stack, batteries included
+```
+
+- **[Quick Start](#quick-start)** · **[Why DocIngest](#why-docingest)** · **[API](#api-endpoints)** · **[Graph RAG](#graph-rag-optional)** · **[Deployment](#deployment)** · **[Configuration](#configuration)**
+
+## Why DocIngest
+
+Ingestion is the ugliest, most re-invented part of every RAG stack — and the layer you re-index again and again as chunking and embedding strategies change. DocIngest packages it as a real, self-hostable service:
+
+| | DocIngest | Unstructured | Ragie | LlamaCloud | RAGFlow |
+|---|:---:|:---:|:---:|:---:|:---:|
+| Open source | ✅ Apache-2.0 | partial | ❌ | ❌ | ✅ |
+| Self-host | ✅ | ✅ | ❌ | ❌ | ✅ |
+| Parse → chunk → embed → **serve search** | ✅ | parse only | ✅ | parse-centric | ✅ |
+| Built-in **multi-tenant isolation** | ✅ | ❌ | ❌ | ❌ | limited |
+| **Knowledge graph** (entities + communities) | ✅ | ❌ | ❌ | limited | ✅ |
+| Local embeddings (no per-token cost) | ✅ | — | ❌ | ❌ | configurable |
+| Managed cloud option | 🔜 | ✅ | ✅ | ✅ | ✅ |
+
+The combination — permissive OSS **and** real multi-tenancy **and** a graph layer **and** a managed path — is what sets DocIngest apart.
 
 ## Features
 
 - **Document conversion** -- PDF, DOCX, HTML to Markdown via IBM Docling; TXT/MD pass-through
 - **Two-pass chunking** -- structural split on Markdown headings, then semantic sub-splitting via embeddings
 - **Local embeddings** -- FastEmbed with BAAI/bge-small-en-v1.5 (384-dim, no API keys needed)
-- **Vector search** -- Qdrant-powered similarity search with optional cross-encoder reranking
+- **Vector search** -- Qdrant-powered similarity search with local cross-encoder reranking (`ms-marco-MiniLM`)
+- **Graph RAG** (optional) -- spaCy entity & relationship extraction plus Leiden community detection with extractive summaries, exposed via `/v1/graph/*`
 - **Multi-tenancy** -- per-tenant API keys, Qdrant collections, and blob storage paths
-- **Async pipeline** -- Upload → Convert → Chunk → Embed → Store via ARQ job queue
+- **Async pipeline** -- Upload → Convert → Chunk → Embed → Store → (optional) Build Graph via ARQ job queue
 - **Web UI** -- React frontend for document upload, status tracking, and search
 - **Rate limiting** -- Redis token-bucket per API key (fail-open)
 - **Observability** -- structured JSON logging with trace IDs and per-stage timing
@@ -38,7 +65,7 @@ Upload a PDF, DOCX, HTML, TXT, or Markdown file and DocIngest will convert it to
                    └─────────┘ └─────────┘   └──────────┘
 ```
 
-**Services:** React frontend, API server, converter workers (Docling), chunker workers (embed + store), folder watcher
+**Services:** React frontend, API server, converter workers (Docling), chunker workers (embed + store), graph worker (spaCy entities + Leiden communities → MongoDB graph store, optional), folder watcher
 
 ## Quick Start
 
@@ -69,7 +96,9 @@ open http://localhost:3000
 
 ## API Endpoints
 
-All endpoints require an `X-API-Key` header.
+DocIngest uses two auth mechanisms: **API keys** (`X-API-Key` header) for document/search/graph endpoints, and **JWT** (`Authorization: Bearer …`) for user & key management.
+
+**Documents & search** (API key)
 
 | Method | Path | Description |
 |--------|------|-------------|
@@ -81,8 +110,21 @@ All endpoints require an `X-API-Key` header.
 | `GET` | `/v1/documents/{id}` | Get document status |
 | `DELETE` | `/v1/documents/{id}` | Delete document and chunks |
 | `POST` | `/v1/documents/{id}/reprocess` | Re-convert and re-chunk |
-| `POST` | `/v1/search` | Semantic vector search |
-| `GET` | `/v1/health` | Health check |
+| `POST` | `/v1/search` | Semantic vector search + reranking |
+| `GET` | `/v1/health` | Health check (no auth) |
+
+**Graph RAG** (API key; requires `GRAPH_RAG_ENABLED=true`, else `403`)
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/v1/graph/entities` | List entities (paginated) |
+| `GET` | `/v1/graph/entities/{id}` | Entity detail + neighbors |
+| `GET` | `/v1/graph/communities` | List communities |
+| `GET` | `/v1/graph/communities/{id}` | Community detail + members |
+| `POST` | `/v1/graph/communities/rebuild` | Rebuild communities (Leiden) |
+| `POST` | `/v1/graph/search` | Semantic search over community summaries |
+
+**Auth & admin** (JWT): `/v1/auth/*` (login, bootstrap, `/me`, user CRUD) and `/v1/admin/*` (application logs, API-key management).
 
 Interactive API docs available at `/docs` (Swagger UI) and `/redoc`.
 
@@ -102,11 +144,38 @@ Environment variables (see `.env.example` for defaults):
 | `MINIO_SECRET_KEY` | `minioadmin` | MinIO secret key |
 | `MINIO_BUCKET` | `docingest` | MinIO bucket name |
 | `FASTEMBED_MODEL` | `BAAI/bge-small-en-v1.5` | Embedding model |
+| `RERANKER_MODEL` | `Xenova/ms-marco-MiniLM-L-6-v2` | Local cross-encoder for reranking (~80 MB, ONNX) |
 | `CHUNK_MAX_TOKENS` | `512` | Max tokens per chunk |
 | `CHUNK_OVERLAP_PERCENT` | `10` | Overlap between chunks |
 | `EMBEDDING_DIMENSIONS` | `384` | Embedding vector size |
 | `EMBEDDING_BATCH_SIZE` | `100` | Embedding batch size |
 | `DEFAULT_RATE_LIMIT` | `100` | Requests/min per API key |
+| `GRAPH_RAG_ENABLED` | `false` | Master switch for entity extraction, relationships & communities |
+| `SPACY_MODEL` | `en_core_web_lg` | spaCy model for entity extraction (graph worker) |
+
+## Graph RAG (optional)
+
+Beyond vector search, DocIngest can build a **knowledge graph** from your corpus — turning unstructured documents into queryable entities, relationships, and topical communities. It's gated behind `GRAPH_RAG_ENABLED` and runs as its own worker, so it never slows the core pipeline.
+
+**Pipeline:** after a document completes, the `graph-worker` runs spaCy NER + subject-verb-object relationship extraction, deduplicates entities into a tenant-scoped MongoDB graph store, then — on demand — clusters them with the Leiden algorithm at multiple resolutions and writes TF-IDF extractive summaries for each community.
+
+**Enable it:**
+
+```bash
+# Docker Compose — the graph-worker service is included; just flip the flag
+echo "GRAPH_RAG_ENABLED=true" >> .env
+docker compose up --build -d
+
+# Helm
+helm upgrade docingest ./deploy/helm/docingest --reuse-values \
+  --set config.graphRagEnabled=true --set graphWorker.enabled=true
+
+# Local — install the spaCy model, then run the worker
+python -m spacy download en_core_web_lg
+arq docingest.workers.graph_builder.WorkerSettings
+```
+
+Then explore the graph via `GET /v1/graph/entities`, `GET /v1/graph/communities`, and `POST /v1/graph/communities/rebuild`. See [CLAUDE.md](CLAUDE.md#graph-rag-optional-feature) for tuning knobs.
 
 ## Hardware Requirements
 
@@ -239,6 +308,8 @@ ruff check src/
 - **Blob storage:** MinIO (S3-compatible)
 - **Job queue:** ARQ (async Redis queue)
 - **Rate limiting:** Redis token-bucket
+- **Reranking:** FastEmbed cross-encoder (`ms-marco-MiniLM`)
+- **Graph RAG:** spaCy (`en_core_web_lg`) + python-igraph / leidenalg
 
 ## Project Structure
 
@@ -248,8 +319,8 @@ src/docingest/
 ├── api/                # FastAPI app, auth, middleware, routes
 ├── db/                 # MongoDB, Qdrant, Redis, MinIO clients
 ├── models/             # Pydantic data models
-├── services/           # Conversion, chunking, embedding, reranking
-├── workers/            # ARQ background job workers
+├── services/           # Conversion, chunking, embedding, reranking, entity extraction, community detection
+├── workers/            # ARQ workers: converter, chunker, graph builder
 └── watcher/            # Watched folder auto-ingestion
 ```
 
@@ -284,6 +355,18 @@ docker compose ps
 # 4. Create your first tenant API key
 docker compose exec ingestion-api python scripts/create_api_key.py my-tenant "My Tenant"
 ```
+
+### Kubernetes (Helm)
+
+A Kubernetes-agnostic Helm chart lives in [`deploy/helm/docingest`](deploy/helm/docingest). It deploys the API, workers, and frontend, with bundled MongoDB/Qdrant/Redis/MinIO enabled by default for parity with Compose:
+
+```bash
+helm install docingest ./deploy/helm/docingest \
+  --namespace docingest --create-namespace \
+  --set secrets.jwtSecretKey="$(openssl rand -hex 32)"
+```
+
+For production, disable the bundled datastores and point at managed services (MongoDB Atlas, Qdrant Cloud, managed Redis, S3) via a values file. See the [chart README](deploy/helm/docingest/README.md) for the full values reference, ingress setup, autoscaling, and image build/push instructions.
 
 ### Scaling workers
 
