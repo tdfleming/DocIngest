@@ -92,3 +92,27 @@ jobs:
             echo "== $f =="
             docker run --rm -i hadolint/hadolint hadolint --failure-threshold error - < "$f"
           done
+
+  helm:
+    name: Helm chart (lint + template)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/setup-helm@v4
+        with:
+          version: v3.16.3
+      - name: helm lint
+        run: helm lint deploy/helm/docingest
+      - name: helm template (defaults — bundled datastores)
+        run: helm template docingest deploy/helm/docingest > /dev/null
+      - name: helm template (external datastores + graph + ingress)
+        run: |
+          helm template docingest deploy/helm/docingest \
+            --set mongodb.enabled=false --set qdrant.enabled=false \
+            --set redis.enabled=false --set minio.enabled=false \
+            --set externalDatastores.mongodbUri=mongodb://x:27017 \
+            --set externalDatastores.qdrantHost=qdrant.example.net \
+            --set externalDatastores.redisUrl=redis://redis.example.net:6379 \
+            --set externalDatastores.minioEndpoint=s3.amazonaws.com \
+            --set config.graphRagEnabled=true --set graphWorker.enabled=true \
+            --set ingress.enabled=true > /dev/null

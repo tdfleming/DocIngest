@@ -1,0 +1,61 @@
+{{- $root := . -}}
+{{- $workers := list
+  (dict "name" "converter-worker" "component" "converter-worker"   "cfg" .Values.converter   "module" "docingest.workers.converter.WorkerSettings")
+  (dict "name" "chunker-worker"   "component" "chunker-worker"     "cfg" .Values.chunker     "module" "docingest.workers.chunker.WorkerSettings")
+  (dict "name" "graph-worker"     "component" "graph-worker"       "cfg" .Values.graphWorker "module" "docingest.workers.graph_builder.WorkerSettings")
+-}}
+{{- range $w := $workers }}
+{{- if $w.cfg.enabled }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "docingest.fullname" $root }}-{{ $w.name }}
+  labels:
+    {{- include "docingest.labels" $root | nindent 4 }}
+    app.kubernetes.io/component: {{ $w.component }}
+spec:
+  replicas: {{ $w.cfg.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "docingest.selectorLabels" $root | nindent 6 }}
+      app.kubernetes.io/component: {{ $w.component }}
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $root.Template.BasePath "/configmap.yaml") $root | sha256sum }}
+        checksum/secret: {{ include (print $root.Template.BasePath "/secret.yaml") $root | sha256sum }}
+      labels:
+        {{- include "docingest.selectorLabels" $root | nindent 8 }}
+        app.kubernetes.io/component: {{ $w.component }}
+    spec:
+      {{- include "docingest.imagePullSecrets" $root | nindent 6 }}
+      containers:
+        - name: {{ $w.name }}
+          image: "{{ $root.Values.global.imageRegistry }}/{{ $w.cfg.image.repository }}:{{ $w.cfg.image.tag | default $root.Values.global.imageTag | default $root.Chart.AppVersion }}"
+          imagePullPolicy: {{ $root.Values.global.imagePullPolicy }}
+          command: ["arq", {{ $w.module | quote }}]
+          envFrom:
+            - configMapRef:
+                name: {{ include "docingest.fullname" $root }}-config
+            - secretRef:
+                name: {{ include "docingest.secretName" $root }}
+            {{- with $root.Values.extraEnvFrom }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          resources:
+            {{- toYaml $w.cfg.resources | nindent 12 }}
+      {{- with $w.cfg.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $w.cfg.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $w.cfg.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}
+{{- end }}

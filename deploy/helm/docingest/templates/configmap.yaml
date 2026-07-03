@@ -1,0 +1,39 @@
+{{- /* Compute datastore endpoints: bundled service DNS when enabled, else external. */ -}}
+{{- $mongoUri := .Values.externalDatastores.mongodbUri -}}
+{{- if .Values.mongodb.enabled -}}
+{{- $mongoUri = printf "mongodb://%s:27017" (include "docingest.mongodb.fullname" .) -}}
+{{- end -}}
+{{- $qdrantHost := .Values.externalDatastores.qdrantHost -}}
+{{- if .Values.qdrant.enabled -}}
+{{- $qdrantHost = include "docingest.qdrant.fullname" . -}}
+{{- end -}}
+{{- $redisUrl := .Values.externalDatastores.redisUrl -}}
+{{- if .Values.redis.enabled -}}
+{{- $redisUrl = printf "redis://%s:6379" (include "docingest.redis.fullname" .) -}}
+{{- end -}}
+{{- $minioEndpoint := .Values.externalDatastores.minioEndpoint -}}
+{{- if .Values.minio.enabled -}}
+{{- $minioEndpoint = printf "%s:9000" (include "docingest.minio.fullname" .) -}}
+{{- end -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "docingest.fullname" . }}-config
+  labels:
+    {{- include "docingest.labels" . | nindent 4 }}
+data:
+  MONGODB_URI: {{ $mongoUri | quote }}
+  MONGODB_DATABASE: {{ .Values.config.mongodbDatabase | quote }}
+  QDRANT_HOST: {{ $qdrantHost | quote }}
+  QDRANT_PORT: {{ .Values.config.qdrantPort | quote }}
+  REDIS_URL: {{ $redisUrl | quote }}
+  MINIO_ENDPOINT: {{ $minioEndpoint | quote }}
+  MINIO_SECURE: {{ .Values.config.minioSecure | quote }}
+  MINIO_BUCKET: {{ .Values.config.minioBucket | quote }}
+  FASTEMBED_MODEL: {{ .Values.config.fastembedModel | quote }}
+  RERANKER_MODEL: {{ .Values.config.rerankerModel | quote }}
+  SPACY_MODEL: {{ .Values.config.spacyModel | quote }}
+  GRAPH_RAG_ENABLED: {{ .Values.config.graphRagEnabled | quote }}
+  {{- range $k, $v := .Values.extraEnv }}
+  {{ $k }}: {{ $v | quote }}
+  {{- end }}
