@@ -1,0 +1,233 @@
+# Default values for the DocIngest Helm chart.
+# This is a YAML-formatted file. Override with `-f my-values.yaml` or `--set`.
+
+# -- Override the chart name used in resource names.
+nameOverride: ""
+# -- Fully override the generated release name prefix.
+fullnameOverride: ""
+
+global:
+  # -- Container registry hosting the DocIngest images.
+  imageRegistry: ghcr.io/tdfleming
+  # -- Image tag applied when a component doesn't set its own. Falls back to Chart appVersion.
+  imageTag: ""
+  # -- Pull secrets for private registries, e.g. [{name: regcred}].
+  imagePullSecrets: []
+  # -- Default image pull policy for all app images.
+  imagePullPolicy: IfNotPresent
+
+# ---------------------------------------------------------------------------
+# Application configuration (rendered into a ConfigMap consumed by all pods).
+# Connection endpoints for bundled datastores are computed automatically;
+# only set the `external*` values below when a datastore is disabled.
+# ---------------------------------------------------------------------------
+config:
+  mongodbDatabase: docingest
+  qdrantPort: "6333"
+  minioBucket: docingest
+  minioSecure: "false"
+  fastembedModel: BAAI/bge-small-en-v1.5
+  rerankerModel: Xenova/ms-marco-MiniLM-L-6-v2
+  spacyModel: en_core_web_lg
+  # Master switch for entity extraction, relationships, and communities.
+  # When true, also set graphWorker.enabled=true.
+  graphRagEnabled: "false"
+
+# Endpoints used ONLY when the matching bundled datastore is disabled
+# (i.e. you are pointing at managed MongoDB / Qdrant / Redis / S3).
+externalDatastores:
+  mongodbUri: ""      # e.g. mongodb+srv://user:pass@cluster.example.net
+  qdrantHost: ""      # e.g. qdrant.example.net
+  redisUrl: ""        # e.g. redis://redis.example.net:6379
+  minioEndpoint: ""   # e.g. s3.amazonaws.com
+
+# -- Extra environment variables added to the ConfigMap (string values).
+extraEnv: {}
+#   CHUNK_MAX_TOKENS: "512"
+#   DEFAULT_RATE_LIMIT: "100"
+
+# -- Extra envFrom sources (e.g. an externally-managed ConfigMap/Secret).
+extraEnvFrom: []
+
+# ---------------------------------------------------------------------------
+# Secrets. If `existingSecret` is set, the chart uses it instead of creating
+# one; it must contain JWT_SECRET_KEY, MINIO_ACCESS_KEY, MINIO_SECRET_KEY.
+# ---------------------------------------------------------------------------
+secrets:
+  existingSecret: ""
+  jwtSecretKey: change-me-in-production
+  minioAccessKey: minioadmin
+  minioSecretKey: minioadmin
+
+# ---------------------------------------------------------------------------
+# API service (FastAPI).
+# ---------------------------------------------------------------------------
+api:
+  replicaCount: 2
+  image:
+    repository: docingest-api
+    tag: ""
+  service:
+    # Named `ingestion-api` so the bundled frontend's nginx (which proxies
+    # /v1 to http://ingestion-api:8000) resolves it in-cluster.
+    name: ingestion-api
+    type: ClusterIP
+    port: 8000
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: "1"
+      memory: 1Gi
+  autoscaling:
+    enabled: false
+    minReplicas: 2
+    maxReplicas: 6
+    targetCPUUtilizationPercentage: 75
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+# ---------------------------------------------------------------------------
+# Frontend (React SPA served by nginx).
+# ---------------------------------------------------------------------------
+frontend:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: docingest-frontend
+    tag: ""
+  service:
+    type: ClusterIP
+    port: 3000
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 250m
+      memory: 128Mi
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+# ---------------------------------------------------------------------------
+# Workers (ARQ queue consumers — no Service, scale via replicaCount/autoscaling).
+# ---------------------------------------------------------------------------
+converter:
+  enabled: true
+  replicaCount: 2
+  image:
+    repository: docingest-converter
+    tag: ""
+  resources:
+    requests:
+      cpu: 500m
+      memory: 2Gi
+    limits:
+      cpu: "2"
+      memory: 4Gi
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+chunker:
+  enabled: true
+  replicaCount: 2
+  image:
+    repository: docingest-chunker
+    tag: ""
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: "1"
+      memory: 2Gi
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+graphWorker:
+  # Disabled by default; enable together with config.graphRagEnabled=true.
+  enabled: false
+  replicaCount: 1
+  image:
+    repository: docingest-graph-worker
+    tag: ""
+  resources:
+    requests:
+      cpu: 500m
+      memory: 2Gi
+    limits:
+      cpu: "2"
+      memory: 4Gi
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+# ---------------------------------------------------------------------------
+# Ingress (recommended access path). Routes /v1 -> API, / -> frontend.
+# ---------------------------------------------------------------------------
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  host: docingest.local
+  tls: []
+  #  - secretName: docingest-tls
+  #    hosts: [docingest.local]
+
+# ---------------------------------------------------------------------------
+# Bundled datastores. Enabled by default for self-host parity with
+# docker-compose. For production, disable these and use managed services
+# (set the matching externalDatastores.* value above).
+# ---------------------------------------------------------------------------
+mongodb:
+  enabled: true
+  image: mongo:7
+  persistence:
+    enabled: true
+    storageClass: ""
+    size: 8Gi
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+
+qdrant:
+  enabled: true
+  image: qdrant/qdrant:v1.13.2
+  persistence:
+    enabled: true
+    storageClass: ""
+    size: 10Gi
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+
+redis:
+  enabled: true
+  image: redis:7-alpine
+  persistence:
+    enabled: true
+    storageClass: ""
+    size: 2Gi
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+minio:
+  enabled: true
+  image: minio/minio:latest
+  persistence:
+    enabled: true
+    storageClass: ""
+    size: 20Gi
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
