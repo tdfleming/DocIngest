@@ -34,6 +34,8 @@ Ingestion is the ugliest, most re-invented part of every RAG stack — and the l
 
 The combination — permissive OSS **and** real multi-tenancy **and** a graph layer **and** a managed path — is what sets DocIngest apart.
 
+See [**Benchmarks & Comparison**](docs/benchmarks.md) for the full capability/pricing table and a reproducible performance harness.
+
 ## Features
 
 - **Document conversion** -- PDF, DOCX, HTML to Markdown via IBM Docling; TXT/MD pass-through
