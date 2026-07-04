@@ -9,7 +9,9 @@ from fastapi.security import APIKeyHeader, HTTPAuthorizationCredentials, HTTPBea
 
 from docingest.config import settings
 from docingest.db.mongodb import get_api_key, get_db
+from docingest.db.organizations import get_membership
 from docingest.models.api_key import ApiKeyScope, key_has_scope
+from docingest.models.organization import OrgRole
 from docingest.models.user import UserRole
 from docingest.services.rate_limiter import RateLimitResult, check_rate_limit
 
@@ -87,6 +89,36 @@ async def require_admin(user: dict = Depends(resolve_user)) -> dict:  # noqa: B0
 
 CurrentUser = Annotated[dict, Depends(resolve_user)]
 AdminUser = Annotated[dict, Depends(require_admin)]
+
+
+# --- Organization context (JWT) ---
+
+
+async def resolve_org(user: dict = Depends(resolve_user)) -> dict:  # noqa: B008
+    """Resolve the active organization from the JWT and confirm membership."""
+    org_id = user.get("org_id")
+    if not org_id:
+        raise HTTPException(status_code=403, detail="No active organization in token")
+    db = await get_db()
+    membership = await get_membership(db, org_id, user["user_id"])
+    if not membership:
+        raise HTTPException(status_code=403, detail="Not a member of this organization")
+    return {"org_id": org_id, "user_id": user["user_id"], "role": membership["role"]}
+
+
+def require_org_role(*allowed: OrgRole):
+    """Dependency factory: require the current org membership to hold a role."""
+
+    async def _dep(org: dict = Depends(resolve_org)) -> dict:  # noqa: B008
+        if org["role"] not in allowed:
+            raise HTTPException(status_code=403, detail="Insufficient organization role")
+        return org
+
+    return _dep
+
+
+CurrentOrg = Annotated[dict, Depends(resolve_org)]
+OrgManager = Annotated[dict, Depends(require_org_role(OrgRole.OWNER, OrgRole.ADMIN))]
 
 
 # --- API key tenant dependencies ---

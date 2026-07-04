@@ -56,5 +56,15 @@ class OrganizationResponse(BaseModel):
 
 class MemberResponse(BaseModel):
     user_id: str
+    username: str | None = None
     role: OrgRole
     created_at: str
+
+
+class AddMemberRequest(BaseModel):
+    username: str = Field(min_length=1)
+    role: OrgRole = OrgRole.MEMBER
+
+
+class UpdateMemberRequest(BaseModel):
+    role: OrgRole

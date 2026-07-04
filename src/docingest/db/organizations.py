@@ -121,6 +121,12 @@ async def list_org_members(db: AsyncIOMotorDatabase, org_id: str) -> list[dict]:
     return await db.organization_memberships.find({"org_id": org_id}).to_list(1000)
 
 
+async def count_org_role(db: AsyncIOMotorDatabase, org_id: str, role: OrgRole) -> int:
+    return await db.organization_memberships.count_documents(
+        {"org_id": org_id, "role": str(role)}
+    )
+
+
 async def update_member_role(
     db: AsyncIOMotorDatabase, org_id: str, user_id: str, role: OrgRole
 ) -> bool:
