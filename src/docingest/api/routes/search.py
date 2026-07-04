@@ -11,6 +11,7 @@ from docingest.db.qdrant import get_qdrant, search_chunks
 from docingest.db.usage import record_usage
 from docingest.models.usage import UsageEventType
 from docingest.services.embedding import embed_query
+from docingest.services.quota import enforce_quota
 from docingest.services.reranker import rerank
 
 router = APIRouter()
@@ -49,6 +50,9 @@ class SearchResponse(BaseModel):
 async def semantic_search(tenant: ReadScope, request: SearchRequest):
     start = time.monotonic()
 
+    db = await get_db()
+    await enforce_quota(db, tenant["tenant_id"], UsageEventType.SEARCH)
+
     loop = asyncio.get_running_loop()
     query_vector, token_count = await loop.run_in_executor(None, embed_query, request.query)
 
@@ -86,7 +90,6 @@ async def semantic_search(tenant: ReadScope, request: SearchRequest):
 
     elapsed_ms = int((time.monotonic() - start) * 1000)
 
-    db = await get_db()
     await record_usage(
         db, tenant["tenant_id"], UsageEventType.SEARCH, org_id=tenant.get("org_id")
     )

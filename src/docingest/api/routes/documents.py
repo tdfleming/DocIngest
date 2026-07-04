@@ -28,6 +28,7 @@ from docingest.db.redis import get_redis_pool
 from docingest.db.usage import record_usage
 from docingest.models.document import ContentType, DocumentStatus, SourceType
 from docingest.models.usage import UsageEventType
+from docingest.services.quota import enforce_quota
 
 router = APIRouter()
 log = structlog.get_logger()
@@ -175,6 +176,8 @@ async def upload_document(
         if existing:
             return {"id": str(existing["_id"]), "status": "duplicate", "existing": True}
 
+    await enforce_quota(db, tenant["tenant_id"], UsageEventType.INGEST)
+
     blob_client = get_blob_client()
     doc_id_placeholder = source_hash[:12]
     blob_path = f"raw/{doc_id_placeholder}.{content_type}"
@@ -249,6 +252,8 @@ async def _ingest_url_core(
         existing = await find_by_hash(db, tenant["tenant_id"], source_hash)
         if existing:
             return {"id": str(existing["_id"]), "status": "duplicate", "existing": True}
+
+    await enforce_quota(db, tenant["tenant_id"], UsageEventType.INGEST)
 
     blob_client = get_blob_client()
     blob_path = f"raw/{source_hash[:12]}.{content_type}"
