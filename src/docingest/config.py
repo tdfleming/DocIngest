@@ -50,6 +50,10 @@ class Settings(BaseSettings):
     # Self-serve signup (OFF by default — enable for the managed/cloud deployment)
     signup_enabled: bool = False
 
+    # Plan quota enforcement (OFF by default — self-hosted/OSS is unmetered; enable
+    # for the managed/cloud deployment where the FREE plan's limits should apply).
+    quota_enforcement_enabled: bool = False
+
     # Telemetry (opt-in, anonymous — OFF by default; see services/telemetry.py)
     telemetry_enabled: bool = False
     telemetry_endpoint: str = "https://telemetry.docingest.dev/v1/heartbeat"

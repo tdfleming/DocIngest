@@ -19,6 +19,10 @@ A running instance also serves interactive docs at `/docs` (Swagger UI) and `/re
 limits). `GET /v1/subscription` returns the active org's subscription, defaulting to the
 free plan when none is set; `PUT /v1/subscription` (OWNER/ADMIN) changes the org's plan.
 
+**Quota enforcement.** When `QUOTA_ENFORCEMENT_ENABLED=true`, ingest and search requests
+that would exceed the active plan's monthly limit are rejected with `402 Payment Required`.
+It is OFF by default, so self-hosted deployments stay unmetered.
+
 The full specification below is generated from the FastAPI app at build time.
 
 <div id="redoc-container"></div>
