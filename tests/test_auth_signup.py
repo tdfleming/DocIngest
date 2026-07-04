@@ -99,7 +99,7 @@ async def test_signup_disabled_returns_403(db, monkeypatch):
     monkeypatch.setattr(auth_routes.settings, "signup_enabled", False)
     with pytest.raises(HTTPException) as exc:
         await auth_routes.signup(
-            SignupRequest(username="bob", password="password123", organization_name="B")
+            SignupRequest(username="bob", password="password123", organization_name="BizOrg")
         )
     assert exc.value.status_code == 403
 
@@ -107,11 +107,11 @@ async def test_signup_disabled_returns_403(db, monkeypatch):
 async def test_signup_duplicate_username_returns_409(db, monkeypatch):
     monkeypatch.setattr(auth_routes.settings, "signup_enabled", True)
     await auth_routes.signup(
-        SignupRequest(username="carol", password="password123", organization_name="C")
+        SignupRequest(username="carol", password="password123", organization_name="CorpOne")
     )
     with pytest.raises(HTTPException) as exc:
         await auth_routes.signup(
-            SignupRequest(username="carol", password="password123", organization_name="C2")
+            SignupRequest(username="carol", password="password123", organization_name="CorpTwo")
         )
     assert exc.value.status_code == 409
 
@@ -119,7 +119,7 @@ async def test_signup_duplicate_username_returns_409(db, monkeypatch):
 async def test_login_attaches_org_context(db, monkeypatch):
     monkeypatch.setattr(auth_routes.settings, "signup_enabled", True)
     su = await auth_routes.signup(
-        SignupRequest(username="dave", password="password123", organization_name="D")
+        SignupRequest(username="dave", password="password123", organization_name="DaveCo")
     )
     login_resp = await auth_routes.login(LoginRequest(username="dave", password="password123"))
     assert _decode(login_resp.access_token)["org_id"] == su.organization.id
