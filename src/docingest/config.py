@@ -47,6 +47,9 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     jwt_access_token_expire_minutes: int = 480
 
+    # Self-serve signup (OFF by default — enable for the managed/cloud deployment)
+    signup_enabled: bool = False
+
     # Telemetry (opt-in, anonymous — OFF by default; see services/telemetry.py)
     telemetry_enabled: bool = False
     telemetry_endpoint: str = "https://telemetry.docingest.dev/v1/heartbeat"
