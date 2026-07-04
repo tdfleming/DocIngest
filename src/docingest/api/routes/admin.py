@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 
 from docingest.api.auth import AdminUser
 from docingest.db.mongodb import get_db
+from docingest.models.api_key import ApiKeyScope
 from docingest.services.api_key_service import (
     create_api_key,
     delete_api_key,
@@ -76,12 +77,16 @@ class CreateApiKeyRequest(BaseModel):
     tenant_id: str = Field(min_length=1)
     tenant_name: str = Field(min_length=1)
     rate_limit: int = Field(100, ge=1)
+    org_id: str | None = None
+    # Restrict the key to these scopes; None grants full access.
+    scopes: list[ApiKeyScope] | None = None
 
 
 class UpdateApiKeyRequest(BaseModel):
     tenant_name: str | None = None
     rate_limit: int | None = Field(None, ge=1)
     enabled: bool | None = None
+    scopes: list[ApiKeyScope] | None = None
 
 
 @router.get("/api-keys")
@@ -101,7 +106,12 @@ async def create_api_key_route(body: CreateApiKeyRequest, user: AdminUser):
     """Create a new API key (admin only). Returns plaintext once."""
     db = await get_db()
     plaintext, doc = await create_api_key(
-        db, body.tenant_id, body.tenant_name, body.rate_limit
+        db,
+        body.tenant_id,
+        body.tenant_name,
+        body.rate_limit,
+        org_id=body.org_id,
+        scopes=[str(s) for s in body.scopes] if body.scopes else None,
     )
     return {
         "id": str(doc["_id"]),
@@ -109,6 +119,8 @@ async def create_api_key_route(body: CreateApiKeyRequest, user: AdminUser):
         "key_prefix": doc["key_prefix"],
         "tenant_id": doc["tenant_id"],
         "tenant_name": doc["tenant_name"],
+        "org_id": doc.get("org_id"),
+        "scopes": doc.get("scopes"),
         "rate_limit": doc["rate_limit"],
         "enabled": doc["enabled"],
         "created_at": doc["created_at"].isoformat(),
@@ -127,6 +139,8 @@ async def update_api_key_route(
         updates["rate_limit"] = body.rate_limit
     if body.enabled is not None:
         updates["enabled"] = body.enabled
+    if body.scopes is not None:
+        updates["scopes"] = [str(s) for s in body.scopes]
 
     if not updates:
         raise HTTPException(status_code=400, detail="No fields to update")

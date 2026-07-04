@@ -26,14 +26,22 @@ async def create_api_key(
     tenant_id: str,
     tenant_name: str,
     rate_limit: int | None = None,
+    org_id: str | None = None,
+    scopes: list[str] | None = None,
 ) -> tuple[str, dict]:
-    """Create a new API key. Returns (plaintext, doc)."""
+    """Create a new API key. Returns (plaintext, doc).
+
+    ``org_id`` links the key to an organization (typically equal to tenant_id).
+    ``scopes`` restricts the key; None means full access.
+    """
     plaintext, key_hash = generate_api_key()
     doc = {
         "key_hash": key_hash,
         "key_prefix": plaintext[:8],
         "tenant_id": tenant_id,
         "tenant_name": tenant_name,
+        "org_id": org_id,
+        "scopes": [str(s) for s in scopes] if scopes else None,
         "rate_limit": rate_limit or settings.default_rate_limit,
         "enabled": True,
         "created_at": datetime.now(UTC),

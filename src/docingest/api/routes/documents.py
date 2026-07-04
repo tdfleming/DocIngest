@@ -9,7 +9,7 @@ from fastapi import APIRouter, File, HTTPException, Query, Request, UploadFile
 from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel, Field, HttpUrl
 
-from docingest.api.auth import Tenant
+from docingest.api.auth import IngestScope, ReadScope, Tenant
 from docingest.config import settings
 from docingest.db.blob import delete_blob, download_blob, get_blob_client, upload_blob
 from docingest.db.graph_store import delete_doc_graph_data
@@ -149,7 +149,7 @@ def _doc_to_response(doc: dict) -> DocumentResponse:
 @router.post("/documents", status_code=202)
 async def upload_document(
     request: Request,
-    tenant: Tenant,
+    tenant: IngestScope,
     file: UploadFile = File(...),  # noqa: B008
     force: bool = Query(False),
     chunk_size: int | None = Query(None, ge=100, le=2000, description="Max tokens per chunk"),
@@ -284,7 +284,7 @@ async def _ingest_url_core(
 
 
 @router.post("/documents/url", status_code=202)
-async def ingest_from_url(request: Request, tenant: Tenant, body: UrlIngestRequest):
+async def ingest_from_url(request: Request, tenant: IngestScope, body: UrlIngestRequest):
     async with httpx.AsyncClient(follow_redirects=True, timeout=60) as client:
         return await _ingest_url_core(request, tenant, body, client)
 
@@ -293,7 +293,7 @@ _BATCH_CONCURRENCY = 10
 
 
 @router.post("/documents/batch", status_code=202)
-async def batch_ingest(request: Request, tenant: Tenant, body: BatchUrlRequest):
+async def batch_ingest(request: Request, tenant: IngestScope, body: BatchUrlRequest):
     semaphore = asyncio.Semaphore(_BATCH_CONCURRENCY)
 
     async def _ingest_one(http_client: httpx.AsyncClient, url: HttpUrl) -> dict:
@@ -312,14 +312,14 @@ async def batch_ingest(request: Request, tenant: Tenant, body: BatchUrlRequest):
 
 
 @router.get("/documents/stats")
-async def document_stats(tenant: Tenant):
+async def document_stats(tenant: ReadScope):
     """Aggregated document counts by status (efficient for dashboards)."""
     db = await get_db()
     return await get_document_stats(db, tenant["tenant_id"])
 
 
 @router.get("/documents/{doc_id}")
-async def get_document_detail(tenant: Tenant, doc_id: str):
+async def get_document_detail(tenant: ReadScope, doc_id: str):
     db = await get_db()
     doc = await get_document(db, doc_id, tenant["tenant_id"])
     if not doc:
@@ -329,7 +329,7 @@ async def get_document_detail(tenant: Tenant, doc_id: str):
 
 @router.get("/documents")
 async def list_documents_route(
-    tenant: Tenant,
+    tenant: ReadScope,
     status: str | None = Query(None),
     content_type: str | None = Query(None),
     page: int = Query(1, ge=1),
@@ -351,7 +351,7 @@ async def list_documents_route(
 
 
 @router.delete("/documents/{doc_id}")
-async def delete_document_route(tenant: Tenant, doc_id: str):
+async def delete_document_route(tenant: IngestScope, doc_id: str):
     db = await get_db()
     doc = await get_document(db, doc_id, tenant["tenant_id"])
     if not doc:
@@ -390,7 +390,7 @@ async def delete_document_route(tenant: Tenant, doc_id: str):
 
 
 @router.post("/documents/{doc_id}/reprocess", status_code=202)
-async def reprocess_document(request: Request, tenant: Tenant, doc_id: str):
+async def reprocess_document(request: Request, tenant: IngestScope, doc_id: str):
     db = await get_db()
     doc = await get_document(db, doc_id, tenant["tenant_id"])
     if not doc:
@@ -427,7 +427,7 @@ async def reprocess_document(request: Request, tenant: Tenant, doc_id: str):
 
 
 @router.get("/documents/{doc_id}/markdown")
-async def get_document_markdown(tenant: Tenant, doc_id: str):
+async def get_document_markdown(tenant: ReadScope, doc_id: str):
     """Download the converted markdown for a document."""
     db = await get_db()
     doc = await get_document(db, doc_id, tenant["tenant_id"])

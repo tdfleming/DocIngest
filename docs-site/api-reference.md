@@ -5,6 +5,11 @@ All endpoints are versioned under `/v1/`. DocIngest uses two auth mechanisms:
 - **API key** (`X-API-Key` header) — document, search, and graph endpoints
 - **JWT** (`Authorization: Bearer …`) — user and API-key management (`/v1/auth/*`, `/v1/admin/*`)
 
+**API key scopes.** Keys can be restricted to least-privilege scopes: `read`
+(search + reads), `ingest` (create/delete/reprocess documents), and `admin`
+(everything, including graph rebuild). A key with no scopes has full access, so
+existing keys keep working. Set scopes when creating a key via `POST /v1/admin/api-keys`.
+
 A running instance also serves interactive docs at `/docs` (Swagger UI) and `/redoc`.
 
 The full specification below is generated from the FastAPI app at build time.
