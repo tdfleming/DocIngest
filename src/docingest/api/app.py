@@ -1,3 +1,5 @@
+import asyncio
+import contextlib
 from contextlib import asynccontextmanager
 
 import structlog
@@ -13,6 +15,7 @@ from docingest.db.qdrant import close_qdrant
 from docingest.db.redis import close_redis
 from docingest.logging_config import configure_logging
 from docingest.services.rate_limiter import close_rate_limiter, init_rate_limiter
+from docingest.services.telemetry import telemetry_loop
 
 configure_logging()
 
@@ -31,8 +34,20 @@ async def lifespan(app: FastAPI):
         from docingest.db.graph_store import ensure_graph_indexes
 
         await ensure_graph_indexes(db)
+
+    telemetry_task: asyncio.Task | None = None
+    if settings.telemetry_enabled:
+        telemetry_task = asyncio.create_task(telemetry_loop(db, settings))
+        log.info("anonymous telemetry enabled", endpoint=settings.telemetry_endpoint)
+    else:
+        log.info("anonymous telemetry disabled")
+
     yield
     log.info("shutting down")
+    if telemetry_task is not None:
+        telemetry_task.cancel()
+        with contextlib.suppress(asyncio.CancelledError):
+            await telemetry_task
     await close_rate_limiter()
     await close_redis()
     await close_qdrant()

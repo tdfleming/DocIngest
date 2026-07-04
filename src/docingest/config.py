@@ -47,6 +47,11 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     jwt_access_token_expire_minutes: int = 480
 
+    # Telemetry (opt-in, anonymous — OFF by default; see services/telemetry.py)
+    telemetry_enabled: bool = False
+    telemetry_endpoint: str = "https://telemetry.docingest.dev/v1/heartbeat"
+    telemetry_interval_hours: int = 24
+
     # Graph RAG
     graph_rag_enabled: bool = False
     spacy_model: str = "en_core_web_lg"
