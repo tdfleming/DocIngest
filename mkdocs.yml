@@ -52,6 +52,7 @@ nav:
   - Getting Started: getting-started.md
   - Configuration: configuration.md
   - Graph RAG: graph-rag.md
+  - MCP & CLI: integrations.md
   - Deployment: deployment.md
   - API Reference: api-reference.md
   - Benchmarks: benchmarks.md
