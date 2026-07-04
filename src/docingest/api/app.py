@@ -11,6 +11,7 @@ from docingest.api.routes import admin, auth, documents, graph, health, search
 from docingest.config import settings
 from docingest.db.blob import close_blob, ensure_bucket, get_blob_client
 from docingest.db.mongodb import close_db, ensure_indexes, get_db
+from docingest.db.organizations import ensure_org_indexes
 from docingest.db.qdrant import close_qdrant
 from docingest.db.redis import close_redis
 from docingest.logging_config import configure_logging
@@ -28,6 +29,7 @@ async def lifespan(app: FastAPI):
     await init_rate_limiter()
     db = await get_db()
     await ensure_indexes(db)
+    await ensure_org_indexes(db)
     blob_client = get_blob_client()
     ensure_bucket(blob_client)
     if settings.graph_rag_enabled:
