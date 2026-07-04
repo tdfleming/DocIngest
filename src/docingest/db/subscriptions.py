@@ -17,12 +17,19 @@ from docingest.models.subscription import SubscriptionStatus
 
 
 async def ensure_subscription_indexes(db: AsyncIOMotorDatabase) -> None:
-    """One subscription per tenant."""
+    """One subscription per tenant; look up by Stripe customer for webhooks."""
     await db.subscriptions.create_index("tenant_id", unique=True)
+    await db.subscriptions.create_index("stripe_customer_id", sparse=True)
 
 
 async def get_subscription(db: AsyncIOMotorDatabase, tenant_id: str) -> dict | None:
     return await db.subscriptions.find_one({"tenant_id": tenant_id})
+
+
+async def get_subscription_by_stripe_customer(
+    db: AsyncIOMotorDatabase, customer_id: str
+) -> dict | None:
+    return await db.subscriptions.find_one({"stripe_customer_id": customer_id})
 
 
 async def set_subscription(
@@ -30,19 +37,27 @@ async def set_subscription(
     tenant_id: str,
     plan_tier: PlanTier,
     status: SubscriptionStatus = SubscriptionStatus.ACTIVE,
+    stripe_customer_id: str | None = None,
+    stripe_subscription_id: str | None = None,
 ) -> dict:
-    """Create or update a tenant's subscription (idempotent on ``tenant_id``)."""
+    """Create or update a tenant's subscription (idempotent on ``tenant_id``).
+
+    Stripe identifiers are only written when provided, so a plain plan change never
+    clears an existing Stripe link.
+    """
     now = datetime.now(UTC)
+    set_fields: dict = {
+        "plan_tier": str(plan_tier),
+        "status": str(status),
+        "updated_at": now,
+    }
+    if stripe_customer_id is not None:
+        set_fields["stripe_customer_id"] = stripe_customer_id
+    if stripe_subscription_id is not None:
+        set_fields["stripe_subscription_id"] = stripe_subscription_id
     await db.subscriptions.update_one(
         {"tenant_id": tenant_id},
-        {
-            "$set": {
-                "plan_tier": str(plan_tier),
-                "status": str(status),
-                "updated_at": now,
-            },
-            "$setOnInsert": {"created_at": now},
-        },
+        {"$set": set_fields, "$setOnInsert": {"created_at": now}},
         upsert=True,
     )
     return await get_subscription(db, tenant_id)

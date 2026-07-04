@@ -23,6 +23,12 @@ free plan when none is set; `PUT /v1/subscription` (OWNER/ADMIN) changes the org
 that would exceed the active plan's monthly limit are rejected with `402 Payment Required`.
 It is OFF by default, so self-hosted deployments stay unmetered.
 
+**Billing (Stripe).** When `STRIPE_ENABLED=true`, `POST /v1/billing/checkout` (OWNER/ADMIN)
+returns a Stripe Checkout URL to upgrade to a paid plan, `POST /v1/billing/portal` opens the
+hosted Billing Portal, and `POST /v1/billing/webhook` receives Stripe events (signature-verified)
+that reconcile the org's subscription. With billing on, `PUT /v1/subscription` accepts only
+downgrades to free — paid tiers must go through Checkout. All billing routes are OFF by default.
+
 The full specification below is generated from the FastAPI app at build time.
 
 <div id="redoc-container"></div>

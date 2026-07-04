@@ -10,6 +10,7 @@ from docingest.api.middleware import RateLimitHeaderMiddleware, RequestLoggingMi
 from docingest.api.routes import (
     admin,
     auth,
+    billing,
     documents,
     graph,
     health,
@@ -93,6 +94,7 @@ app.include_router(documents.router, prefix="/v1", tags=["documents"])
 app.include_router(search.router, prefix="/v1", tags=["search"])
 app.include_router(usage.router, prefix="/v1", tags=["usage"])
 app.include_router(plans.router, prefix="/v1", tags=["plans"])
+app.include_router(billing.router, prefix="/v1", tags=["billing"])
 app.include_router(auth.router, prefix="/v1", tags=["auth"])
 app.include_router(organizations.router, prefix="/v1", tags=["organizations"])
 app.include_router(admin.router, prefix="/v1", tags=["admin"])
