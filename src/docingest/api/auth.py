@@ -9,6 +9,7 @@ from fastapi.security import APIKeyHeader, HTTPAuthorizationCredentials, HTTPBea
 
 from docingest.config import settings
 from docingest.db.mongodb import get_api_key, get_db
+from docingest.models.api_key import ApiKeyScope, key_has_scope
 from docingest.models.user import UserRole
 from docingest.services.rate_limiter import RateLimitResult, check_rate_limit
 
@@ -88,7 +89,18 @@ CurrentUser = Annotated[dict, Depends(resolve_user)]
 AdminUser = Annotated[dict, Depends(require_admin)]
 
 
-# --- API key tenant dependencies (unchanged) ---
+# --- API key tenant dependencies ---
+
+
+def _key_to_tenant(key_doc: dict) -> dict:
+    """Project an api_keys document into the tenant context passed to routes."""
+    return {
+        "tenant_id": key_doc["tenant_id"],
+        "tenant_name": key_doc.get("tenant_name", ""),
+        "rate_limit": key_doc.get("rate_limit", 100),
+        "org_id": key_doc.get("org_id"),
+        "scopes": key_doc.get("scopes"),
+    }
 
 
 async def resolve_tenant(api_key: str = Security(_api_key_header)) -> dict:
@@ -97,11 +109,7 @@ async def resolve_tenant(api_key: str = Security(_api_key_header)) -> dict:
     key_doc = await get_api_key(db, hash_api_key(api_key))
     if not key_doc:
         raise HTTPException(status_code=401, detail="Invalid API key")
-    return {
-        "tenant_id": key_doc["tenant_id"],
-        "tenant_name": key_doc.get("tenant_name", ""),
-        "rate_limit": key_doc.get("rate_limit", 100),
-    }
+    return _key_to_tenant(key_doc)
 
 
 async def resolve_tenant_with_rate_limit(
@@ -115,11 +123,7 @@ async def resolve_tenant_with_rate_limit(
     if not key_doc:
         raise HTTPException(status_code=401, detail="Invalid API key")
 
-    tenant = {
-        "tenant_id": key_doc["tenant_id"],
-        "tenant_name": key_doc.get("tenant_name", ""),
-        "rate_limit": key_doc.get("rate_limit", 100),
-    }
+    tenant = _key_to_tenant(key_doc)
 
     result: RateLimitResult = await check_rate_limit(key_hash, tenant["rate_limit"])
 
@@ -137,3 +141,27 @@ async def resolve_tenant_with_rate_limit(
 
 
 Tenant = Annotated[dict, Depends(resolve_tenant_with_rate_limit)]
+
+
+# --- API key scope enforcement ---
+
+
+def require_scope(scope: ApiKeyScope):
+    """Dependency factory: require the resolved API key to hold ``scope``.
+
+    Legacy keys (no scopes) and admin-scoped keys pass every check.
+    """
+
+    async def _dep(tenant: Tenant) -> dict:
+        if not key_has_scope(tenant.get("scopes"), scope):
+            raise HTTPException(
+                status_code=403, detail=f"API key lacks required scope: {scope}"
+            )
+        return tenant
+
+    return _dep
+
+
+ReadScope = Annotated[dict, Depends(require_scope(ApiKeyScope.READ))]
+IngestScope = Annotated[dict, Depends(require_scope(ApiKeyScope.INGEST))]
+AdminScope = Annotated[dict, Depends(require_scope(ApiKeyScope.ADMIN))]

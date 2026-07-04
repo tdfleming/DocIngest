@@ -5,7 +5,7 @@ import structlog
 from fastapi import APIRouter
 from pydantic import BaseModel, Field
 
-from docingest.api.auth import Tenant
+from docingest.api.auth import ReadScope
 from docingest.db.qdrant import get_qdrant, search_chunks
 from docingest.services.embedding import embed_query
 from docingest.services.reranker import rerank
@@ -43,7 +43,7 @@ class SearchResponse(BaseModel):
 
 
 @router.post("/search")
-async def semantic_search(tenant: Tenant, request: SearchRequest):
+async def semantic_search(tenant: ReadScope, request: SearchRequest):
     start = time.monotonic()
 
     loop = asyncio.get_running_loop()

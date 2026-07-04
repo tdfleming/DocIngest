@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from pydantic import BaseModel, Field
 
-from docingest.api.auth import Tenant
+from docingest.api.auth import AdminScope, ReadScope
 from docingest.config import settings
 from docingest.db.graph_store import (
     get_community_by_id,
@@ -153,7 +153,7 @@ def _community_to_detail(doc: dict, members: list[EntityResponse]) -> CommunityD
 
 @router.post("/communities/rebuild")
 async def rebuild_communities(
-    tenant: Tenant,
+    tenant: AdminScope,
     db: AsyncIOMotorDatabase = Depends(get_db),  # noqa: B008
 ):
     """Rebuild community detection for the tenant's entity graph.
@@ -172,7 +172,7 @@ async def rebuild_communities(
 
 @router.get("/entities")
 async def list_entities_route(
-    tenant: Tenant,
+    tenant: ReadScope,
     entity_type: str | None = None,
     q: str | None = None,
     page: int = Query(1, ge=1),
@@ -198,7 +198,7 @@ async def list_entities_route(
 
 @router.get("/entities/{entity_id}")
 async def get_entity_detail(
-    tenant: Tenant,
+    tenant: ReadScope,
     entity_id: str,
     db: AsyncIOMotorDatabase = Depends(get_db),  # noqa: B008
 ) -> EntityResponse:
@@ -217,7 +217,7 @@ async def get_entity_detail(
 
 @router.get("/communities")
 async def list_communities_route(
-    tenant: Tenant,
+    tenant: ReadScope,
     level: int | None = None,
     page: int = Query(1, ge=1),
     per_page: int = Query(50, ge=1, le=200),
@@ -241,7 +241,7 @@ async def list_communities_route(
 
 @router.get("/communities/{community_id}")
 async def get_community_detail(
-    tenant: Tenant,
+    tenant: ReadScope,
     community_id: str,
     db: AsyncIOMotorDatabase = Depends(get_db),  # noqa: B008
 ) -> CommunityDetailResponse:
@@ -266,7 +266,7 @@ async def get_community_detail(
 
 @router.post("/search")
 async def graph_search(
-    tenant: Tenant,
+    tenant: ReadScope,
     request: GraphSearchRequest,
     db: AsyncIOMotorDatabase = Depends(get_db),  # noqa: B008
 ) -> GraphSearchResponse:
