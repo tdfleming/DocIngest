@@ -15,6 +15,7 @@ from docingest.api.routes import (
     health,
     organizations,
     search,
+    usage,
 )
 from docingest.config import settings
 from docingest.db.blob import close_blob, ensure_bucket, get_blob_client
@@ -22,6 +23,7 @@ from docingest.db.mongodb import close_db, ensure_indexes, get_db
 from docingest.db.organizations import ensure_org_indexes
 from docingest.db.qdrant import close_qdrant
 from docingest.db.redis import close_redis
+from docingest.db.usage import ensure_usage_indexes
 from docingest.logging_config import configure_logging
 from docingest.services.rate_limiter import close_rate_limiter, init_rate_limiter
 from docingest.services.telemetry import telemetry_loop
@@ -38,6 +40,7 @@ async def lifespan(app: FastAPI):
     db = await get_db()
     await ensure_indexes(db)
     await ensure_org_indexes(db)
+    await ensure_usage_indexes(db)
     blob_client = get_blob_client()
     ensure_bucket(blob_client)
     if settings.graph_rag_enabled:
@@ -85,6 +88,7 @@ app.add_middleware(RateLimitHeaderMiddleware)
 app.include_router(health.router, prefix="/v1", tags=["health"])
 app.include_router(documents.router, prefix="/v1", tags=["documents"])
 app.include_router(search.router, prefix="/v1", tags=["search"])
+app.include_router(usage.router, prefix="/v1", tags=["usage"])
 app.include_router(auth.router, prefix="/v1", tags=["auth"])
 app.include_router(organizations.router, prefix="/v1", tags=["organizations"])
 app.include_router(admin.router, prefix="/v1", tags=["admin"])

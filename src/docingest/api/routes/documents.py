@@ -25,7 +25,9 @@ from docingest.db.mongodb import (
 )
 from docingest.db.qdrant import delete_doc_chunks, get_qdrant
 from docingest.db.redis import get_redis_pool
+from docingest.db.usage import record_usage
 from docingest.models.document import ContentType, DocumentStatus, SourceType
+from docingest.models.usage import UsageEventType
 
 router = APIRouter()
 log = structlog.get_logger()
@@ -208,6 +210,9 @@ async def upload_document(
     trace_id = getattr(state, "trace_id", None) or uuid.uuid4().hex[:16]
     await _enqueue_conversion(doc_id, tenant["tenant_id"], trace_id)
     log.info("document uploaded", doc_id=doc_id, content_type=content_type, trace_id=trace_id)
+    await record_usage(
+        db, tenant["tenant_id"], UsageEventType.INGEST, org_id=tenant.get("org_id")
+    )
 
     return {"id": doc_id, "status": "pending"}
 
@@ -279,6 +284,9 @@ async def _ingest_url_core(
     trace_id = getattr(state, "trace_id", None) or uuid.uuid4().hex[:16]
     await _enqueue_conversion(doc_id, tenant["tenant_id"], trace_id)
     log.info("url ingested", doc_id=doc_id, url=url_str, trace_id=trace_id)
+    await record_usage(
+        db, tenant["tenant_id"], UsageEventType.INGEST, org_id=tenant.get("org_id")
+    )
 
     return {"id": doc_id, "status": "pending"}
 

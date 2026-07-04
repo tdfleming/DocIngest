@@ -12,6 +12,9 @@ existing keys keep working. Set scopes when creating a key via `POST /v1/admin/a
 
 A running instance also serves interactive docs at `/docs` (Swagger UI) and `/redoc`.
 
+**Usage.** `GET /v1/usage` returns the caller tenant's usage totals per event type
+(`ingest`, `search`, …) for the current calendar month — the basis for quotas and billing.
+
 The full specification below is generated from the FastAPI app at build time.
 
 <div id="redoc-container"></div>
