@@ -6,7 +6,10 @@ from fastapi import APIRouter
 from pydantic import BaseModel, Field
 
 from docingest.api.auth import ReadScope
+from docingest.db.mongodb import get_db
 from docingest.db.qdrant import get_qdrant, search_chunks
+from docingest.db.usage import record_usage
+from docingest.models.usage import UsageEventType
 from docingest.services.embedding import embed_query
 from docingest.services.reranker import rerank
 
@@ -82,6 +85,11 @@ async def semantic_search(tenant: ReadScope, request: SearchRequest):
         results = await rerank(request.query, results, request.limit)
 
     elapsed_ms = int((time.monotonic() - start) * 1000)
+
+    db = await get_db()
+    await record_usage(
+        db, tenant["tenant_id"], UsageEventType.SEARCH, org_id=tenant.get("org_id")
+    )
 
     return SearchResponse(
         results=results[: request.limit],
