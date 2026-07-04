@@ -14,6 +14,7 @@ import LoginPage from "./pages/LoginPage";
 import UsersPage from "./pages/UsersPage";
 import LogsPage from "./pages/LogsPage";
 import ApiKeysPage from "./pages/ApiKeysPage";
+import BillingPage from "./pages/BillingPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -42,6 +43,7 @@ export default function App() {
                     <Route path="admin/users" element={<UsersPage />} />
                     <Route path="admin/logs" element={<LogsPage />} />
                     <Route path="admin/api-keys" element={<ApiKeysPage />} />
+                    <Route path="admin/billing" element={<BillingPage />} />
                   </Route>
                 </Route>
               </Routes>

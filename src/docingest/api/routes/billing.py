@@ -12,7 +12,7 @@ import structlog
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 
-from docingest.api.auth import OrgManager
+from docingest.api.auth import CurrentUser, OrgManager
 from docingest.config import settings
 from docingest.db.mongodb import get_db
 from docingest.db.subscriptions import (
@@ -35,6 +35,12 @@ class CheckoutRequest(BaseModel):
 def _require_stripe() -> None:
     if not settings.stripe_enabled:
         raise HTTPException(status_code=404, detail="Billing is not enabled")
+
+
+@router.get("/config")
+async def billing_config(user: CurrentUser):
+    """Whether Stripe billing is enabled — lets the UI hide Checkout/Portal actions."""
+    return {"enabled": settings.stripe_enabled}
 
 
 @router.post("/checkout")

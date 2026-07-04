@@ -214,3 +214,46 @@ export interface UpdateApiKeyRequest {
   rate_limit?: number;
   enabled?: boolean;
 }
+
+// Billing & Usage
+export interface UsageSummary {
+  period_start: string;
+  events: Record<string, number>;
+}
+
+export interface PlanLimits {
+  ingest: number | null;
+  search: number | null;
+  graph_build: number | null;
+}
+
+export type PlanTier = "free" | "starter" | "pro";
+
+export interface Plan {
+  tier: PlanTier;
+  name: string;
+  price_cents: number;
+  limits: PlanLimits;
+}
+
+export type SubscriptionStatus = "active" | "past_due" | "canceled";
+
+export interface SubscriptionResponse {
+  plan: Plan;
+  status: SubscriptionStatus;
+  current_period_start: string;
+  updated_at: string | null;
+}
+
+export interface BillingConfig {
+  enabled: boolean;
+}
+
+export interface CheckoutResponse {
+  checkout_url: string;
+  session_id: string;
+}
+
+export interface PortalResponse {
+  portal_url: string;
+}

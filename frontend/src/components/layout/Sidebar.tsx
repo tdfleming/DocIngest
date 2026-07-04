@@ -1,6 +1,7 @@
 import { Box, Divider, Flex, Image, Text, VStack } from "@chakra-ui/react";
 import {
   FiActivity,
+  FiCreditCard,
   FiFile,
   FiHome,
   FiKey,
@@ -23,6 +24,7 @@ const adminItems: { to: string; label: string; icon: IconType }[] = [
   { to: "/admin/users", label: "Users", icon: FiUsers },
   { to: "/admin/logs", label: "Logs", icon: FiActivity },
   { to: "/admin/api-keys", label: "API Keys", icon: FiKey },
+  { to: "/admin/billing", label: "Billing & Usage", icon: FiCreditCard },
 ];
 
 function NavItem({ to, label, icon: Icon }: { to: string; label: string; icon: IconType }) {
