@@ -3,8 +3,11 @@
 **The open-source ingestion backend for RAG.** Drop-in, multi-tenant: document → clean Markdown → semantic chunks → vectors → knowledge graph. Self-host it free, or run it managed. Own your data, own your pipeline.
 
 [![CI](https://github.com/tdfleming/DocIngest/actions/workflows/ci.yml/badge.svg)](https://github.com/tdfleming/DocIngest/actions/workflows/ci.yml)
+[![Docs](https://img.shields.io/badge/docs-mkdocs-blue.svg)](https://tdfleming.github.io/DocIngest/)
 [![License: Apache 2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 [![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-blue.svg)](https://www.python.org/)
+
+📖 **[Documentation](https://tdfleming.github.io/DocIngest/)** · [Getting Started](https://tdfleming.github.io/DocIngest/getting-started/) · [API Reference](https://tdfleming.github.io/DocIngest/api-reference/)
 
 Point DocIngest at a PDF, DOCX, HTML, TXT, or Markdown file and it converts to clean Markdown, splits into semantic chunks, generates embeddings locally (no API keys), stores them in Qdrant, and — optionally — extracts an entity/relationship knowledge graph. Every layer is tenant-isolated. Run the whole stack with one `docker compose up` or `helm install`.
 
