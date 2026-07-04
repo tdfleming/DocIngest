@@ -15,6 +15,10 @@ A running instance also serves interactive docs at `/docs` (Swagger UI) and `/re
 **Usage.** `GET /v1/usage` returns the caller tenant's usage totals per event type
 (`ingest`, `search`, …) for the current calendar month — the basis for quotas and billing.
 
+**Plans & subscriptions.** `GET /v1/plans` lists the plan catalog (tier, price, monthly
+limits). `GET /v1/subscription` returns the active org's subscription, defaulting to the
+free plan when none is set; `PUT /v1/subscription` (OWNER/ADMIN) changes the org's plan.
+
 The full specification below is generated from the FastAPI app at build time.
 
 <div id="redoc-container"></div>
