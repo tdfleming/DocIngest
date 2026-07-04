@@ -46,6 +46,7 @@ See [**Benchmarks & Comparison**](docs/benchmarks.md) for the full capability/pr
 - **Multi-tenancy** -- per-tenant API keys, Qdrant collections, and blob storage paths
 - **Async pipeline** -- Upload → Convert → Chunk → Embed → Store → (optional) Build Graph via ARQ job queue
 - **Web UI** -- React frontend for document upload, status tracking, and search
+- **MCP server & CLI** -- connect DocIngest to Claude/Cursor via MCP, or script it with the `docingest` CLI
 - **Rate limiting** -- Redis token-bucket per API key (fail-open)
 - **Observability** -- structured JSON logging with trace IDs and per-stage timing
 - **Performance optimized** -- thread-pooled sync I/O, concurrent health checks, batched Qdrant upserts, Lua script caching, collection caching, aggregation-based dashboard stats
@@ -182,6 +183,34 @@ arq docingest.workers.graph_builder.WorkerSettings
 ```
 
 Then explore the graph via `GET /v1/graph/entities`, `GET /v1/graph/communities`, and `POST /v1/graph/communities/rebuild`. See [CLAUDE.md](CLAUDE.md#graph-rag-optional-feature) for tuning knobs.
+
+## MCP & CLI
+
+DocIngest ships two developer surfaces over the API, sharing one client.
+
+**MCP server** — expose ingestion and search to AI agents (Claude Code, Cursor, Claude Desktop):
+
+```bash
+pip install "docingest[mcp]"
+claude mcp add docingest \
+  --env DOCINGEST_API_URL=http://localhost:8000 \
+  --env DOCINGEST_API_KEY=<your-key> \
+  -- docingest-mcp
+```
+
+Tools: `ingest_document`, `search`, `get_document_status`, `list_documents`, `graph_search`.
+
+**CLI** — script it or check it quickly:
+
+```bash
+export DOCINGEST_API_KEY=<your-key>
+docingest ingest ./report.pdf --wait
+docingest search "quarterly revenue" --limit 5
+docingest list --status complete
+docingest health
+```
+
+See the [MCP & CLI docs](docs-site/integrations.md) for full details.
 
 ## Hardware Requirements
 
