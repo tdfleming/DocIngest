@@ -1,0 +1,66 @@
+name: Docs
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - "docs-site/**"
+      - "mkdocs.yml"
+      - "src/docingest/**"
+      - "scripts/export_openapi.py"
+      - ".github/workflows/docs.yml"
+  pull_request:
+    paths:
+      - "docs-site/**"
+      - "mkdocs.yml"
+      - "scripts/export_openapi.py"
+      - ".github/workflows/docs.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build site
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - name: Install dependencies
+        run: |
+          python -m pip install -e ".[dev]"
+          python -m pip install mkdocs-material
+      # Import the FastAPI app and dump its OpenAPI schema for the API reference page.
+      - name: Export OpenAPI spec
+        run: python scripts/export_openapi.py docs-site/openapi.json
+      - name: Build site
+        run: mkdocs build --site-dir _site
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
+    # Only publish from master; on PRs the build job alone validates the site.
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4
