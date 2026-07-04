@@ -54,6 +54,19 @@ class Settings(BaseSettings):
     # for the managed/cloud deployment where the FREE plan's limits should apply).
     quota_enforcement_enabled: bool = False
 
+    # Stripe billing (OFF by default). When enabled, paid plans are purchased via
+    # Stripe Checkout and reconciled through webhooks. Keys/price ids come from the
+    # Stripe dashboard; leave blank for self-hosted/OSS.
+    stripe_enabled: bool = False
+    stripe_secret_key: str = ""
+    stripe_webhook_secret: str = ""
+    stripe_price_starter: str = ""  # Stripe Price id for the STARTER plan
+    stripe_price_pro: str = ""  # Stripe Price id for the PRO plan
+    stripe_checkout_success_url: str = "http://localhost:3000/billing?status=success"
+    stripe_checkout_cancel_url: str = "http://localhost:3000/billing?status=cancel"
+    stripe_portal_return_url: str = "http://localhost:3000/billing"
+    stripe_api_base: str = "https://api.stripe.com"
+
     # Telemetry (opt-in, anonymous — OFF by default; see services/telemetry.py)
     telemetry_enabled: bool = False
     telemetry_endpoint: str = "https://telemetry.docingest.dev/v1/heartbeat"

@@ -14,6 +14,7 @@ from docingest.models.plan import Plan, PlanTier
 
 class SubscriptionStatus(StrEnum):
     ACTIVE = "active"
+    PAST_DUE = "past_due"
     CANCELED = "canceled"
 
 

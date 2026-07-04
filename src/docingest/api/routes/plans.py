@@ -10,9 +10,10 @@ no payment. The Stripe slice routes paid upgrades through Checkout before activa
 
 from datetime import UTC, datetime
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 
 from docingest.api.auth import CurrentOrg, CurrentUser, OrgManager
+from docingest.config import settings
 from docingest.db.mongodb import get_db
 from docingest.db.subscriptions import (
     get_plan_for_tenant,
@@ -20,7 +21,7 @@ from docingest.db.subscriptions import (
     set_subscription,
 )
 from docingest.db.usage import month_start
-from docingest.models.plan import PLAN_CATALOG, Plan
+from docingest.models.plan import PLAN_CATALOG, Plan, PlanTier
 from docingest.models.subscription import (
     SubscriptionResponse,
     SubscriptionStatus,
@@ -56,7 +57,17 @@ async def get_my_subscription(org: CurrentOrg) -> SubscriptionResponse:
 async def update_my_subscription(
     body: UpdateSubscriptionRequest, org: OrgManager
 ) -> SubscriptionResponse:
-    """Change the active org's plan. Requires OWNER/ADMIN."""
+    """Change the active org's plan. Requires OWNER/ADMIN.
+
+    With Stripe enabled, paid tiers must be purchased through Checkout; only a
+    direct downgrade to FREE is allowed here (cancel via the Billing Portal to stop
+    Stripe billing). With Stripe off, any tier may be set directly (provisional).
+    """
+    if settings.stripe_enabled and body.plan_tier != PlanTier.FREE:
+        raise HTTPException(
+            status_code=402,
+            detail="Paid plans must be purchased via Stripe Checkout (POST /v1/billing/checkout).",
+        )
     db = await get_db()
     sub = await set_subscription(db, org["org_id"], body.plan_tier)
     plan = await get_plan_for_tenant(db, org["org_id"])
