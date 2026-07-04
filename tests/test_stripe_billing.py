@@ -112,6 +112,13 @@ def test_first_price_id():
     assert stripe_client.first_price_id({"items": {"data": []}}) is None
 
 
+async def test_billing_config_reflects_flag(monkeypatch):
+    monkeypatch.setattr(billing.settings, "stripe_enabled", True)
+    assert (await billing.billing_config(user={"user_id": "u1"}))["enabled"] is True
+    monkeypatch.setattr(billing.settings, "stripe_enabled", False)
+    assert (await billing.billing_config(user={"user_id": "u1"}))["enabled"] is False
+
+
 # --- integration tests (Mongo) ---
 
 
