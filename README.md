@@ -495,6 +495,19 @@ converter-worker:
 
 See the [Hardware Requirements](#hardware-requirements) section for GPU sizing guidance.
 
+## Telemetry
+
+DocIngest collects **no telemetry by default** — nothing leaves your machine. Owning your data is the whole premise.
+
+If you explicitly opt in (`TELEMETRY_ENABLED=true`), it sends an anonymous heartbeat every `TELEMETRY_INTERVAL_HOURS` (default 24h) so maintainers can gauge how many instances run and on what versions. A heartbeat contains **only**:
+
+- a random instance id (no link to any tenant, user, host, or IP)
+- DocIngest version, OS name, Python minor version
+- a coarse bucket of total document count (e.g. `10-99`) — never an exact number
+- whether Graph RAG is enabled
+
+It never sends document content, tenant data, API keys, file names, or personal data, and sending is fail-silent — it can't affect the app. It's off unless you turn it on.
+
 ## License
 
 Apache License 2.0. See [LICENSE](LICENSE) and [NOTICE](NOTICE).
