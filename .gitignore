@@ -29,3 +29,8 @@ qdrant_data/
 redis_data/
 
 node_modules
+
+# Docs site (generated)
+docs-site/openapi.json
+/site/
+/_site/
