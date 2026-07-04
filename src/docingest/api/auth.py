@@ -34,14 +34,18 @@ def verify_password(password: str, hashed: str) -> bool:
 # --- JWT ---
 
 
-def create_access_token(user_id: str, username: str, role: str) -> str:
+def create_access_token(
+    user_id: str, username: str, role: str, org_id: str | None = None
+) -> str:
     expire = datetime.now(UTC) + timedelta(minutes=settings.jwt_access_token_expire_minutes)
-    payload = {
+    payload: dict = {
         "sub": user_id,
         "username": username,
         "role": role,
         "exp": expire,
     }
+    if org_id:
+        payload["org_id"] = org_id
     return jwt.encode(payload, settings.jwt_secret_key, algorithm=settings.jwt_algorithm)
 
 
@@ -69,6 +73,7 @@ async def resolve_user(
         "user_id": payload["sub"],
         "username": payload["username"],
         "role": payload["role"],
+        "org_id": payload.get("org_id"),
     }
 
 

@@ -32,6 +32,7 @@ All configuration is via environment variables, loaded through pydantic-settings
 |----------|---------|-------------|
 | `JWT_SECRET_KEY` | `change-me-in-production` | **Change before exposing.** JWT signing secret |
 | `JWT_ACCESS_TOKEN_EXPIRE_MINUTES` | `480` | Access-token lifetime |
+| `SIGNUP_ENABLED` | `false` | Enable self-serve `POST /v1/auth/signup` (creates a user + their org) |
 | `DEFAULT_RATE_LIMIT` | `100` | Requests/min per API key |
 
 ## Graph RAG
